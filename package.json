@@ -1,0 +1,28 @@
+{
+  "name": "technical-manament",
+  "version": "1.0.0",
+  "description": "Quản Lý Kỹ Thuật - Technical Management Application",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"No tests\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/longth077/technical-manament.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/longth077/technical-manament/issues"
+  },
+  "homepage": "https://github.com/longth077/technical-manament#readme",
+  "devDependencies": {
+    "electron": "^41.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.9.1"
+  }
+}

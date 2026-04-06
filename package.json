@@ -5,6 +5,8 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
+    "dev": "electron . --dev",
+    "package": "electron-builder --dir",
     "test": "echo \"No tests\" && exit 0"
   },
   "repository": {
@@ -20,9 +22,21 @@
   },
   "homepage": "https://github.com/longth077/technical-manament#readme",
   "devDependencies": {
-    "electron": "^41.0.0"
+    "electron": "^41.0.0",
+    "electron-builder": "^26.0.12"
   },
   "dependencies": {
     "better-sqlite3": "^11.9.1"
+  },
+  "build": {
+    "appId": "com.technical-manament.app",
+    "productName": "Quản Lý Kỹ Thuật",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    }
   }
 }

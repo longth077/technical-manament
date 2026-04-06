@@ -5,6 +5,8 @@ const Database = require('./database');
 let mainWindow;
 let db;
 
+const isDev = process.argv.includes('--dev');
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -21,6 +23,10 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
+  }
 
   mainWindow.on('closed', () => {
     mainWindow = null;

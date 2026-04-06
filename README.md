@@ -36,11 +36,58 @@ Desktop application built with Electron.js for managing technical resources at t
 npm install
 ```
 
-### Run the Application
+## Running the Application
 
-```bash
-npm start
-```
+### Development Mode
+
+Development mode opens the app with DevTools enabled, making it easy to inspect the UI, debug issues, and iterate quickly.
+
+1. **Install dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+2. **Start in development mode:**
+
+   ```bash
+   npm run dev
+   ```
+
+   This launches the Electron app with Chrome DevTools open and watches for runtime errors in the console.
+
+3. **Hot-reload workflow:**
+   - Edit any file under `src/renderer/` (HTML, CSS, JS) and press `Ctrl+R` / `Cmd+R` in the app window to reload.
+   - Changes to `src/main.js`, `src/preload.js`, or `src/database.js` require restarting the process (`Ctrl+C` then `npm run dev`).
+
+### Production Mode
+
+Production mode runs the app without DevTools and is used for distributing or demoing the application.
+
+1. **Start in production mode:**
+
+   ```bash
+   npm start
+   ```
+
+2. **Package for distribution:**
+
+   To create a distributable installer for the current platform:
+
+   ```bash
+   npm run package
+   ```
+
+   The output will be placed in the `dist/` directory.
+
+### Environment Summary
+
+| Aspect              | Development (`npm run dev`) | Production (`npm start` / packaged) |
+|---------------------|-----------------------------|--------------------------------------|
+| DevTools            | Open by default             | Closed                               |
+| Database location   | `userData` directory        | `userData` directory                 |
+| Source maps         | Available                   | Not included in packaged builds      |
+| Recommended for     | Debugging, feature work     | Demo, deployment, distribution       |
 
 ## Project Structure
 

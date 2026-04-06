@@ -30,4 +30,14 @@ db.exec(`
   )
 `);
 
+// Trigger to auto-update updated_at on row modification
+db.exec(`
+  CREATE TRIGGER IF NOT EXISTS users_updated_at
+  AFTER UPDATE ON users
+  FOR EACH ROW
+  BEGIN
+    UPDATE users SET updated_at = datetime('now') WHERE id = OLD.id;
+  END
+`);
+
 module.exports = db;

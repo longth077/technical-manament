@@ -6,6 +6,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const infoFullName = document.getElementById('infoFullName');
   const infoRole = document.getElementById('infoRole');
   const logoutBtn = document.getElementById('logoutBtn');
+  let csrfToken = '';
+
+  // Fetch CSRF token
+  try {
+    const csrfRes = await fetch('/api/csrf-token');
+    const csrfData = await csrfRes.json();
+    csrfToken = csrfData.csrfToken;
+  } catch {
+    // CSRF token fetch failed, will retry on actions
+  }
 
   // Check authentication
   try {
@@ -31,7 +41,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Logout handler
   logoutBtn.addEventListener('click', async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'x-csrf-token': csrfToken },
+      });
     } finally {
       window.location.href = '/signin.html';
     }

@@ -2,6 +2,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('signinForm');
   const alert = document.getElementById('alert');
   const submitBtn = document.getElementById('submitBtn');
+  let csrfToken = '';
+
+  // Fetch CSRF token
+  fetch('/api/csrf-token')
+    .then((res) => res.json())
+    .then((data) => { csrfToken = data.csrfToken; })
+    .catch(() => {});
 
   function showAlert(message, type) {
     alert.textContent = message;
@@ -31,7 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/auth/signin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrf-token': csrfToken,
+        },
         body: JSON.stringify({ username, password }),
       });
 

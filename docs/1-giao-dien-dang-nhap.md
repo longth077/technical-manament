@@ -21,7 +21,6 @@
 </tbody>
 </table>
 
-**  
 QUẢN LÝ KỸ THUẬT**
 
 | **TỔNG QUAN KHU KỸ THUẬT** | **DANH SÁCH CÁN BỘ, CMKT** | **TRẠM XƯỞNG** | **VŨ KHÍ TRANG BỊ** | **TRANG THIẾT BỊ KỸ THUẬT** | **PHƯƠNG TIỆN** | **VẬT TƯ** |     | **(Thêm danh mục…)** |     |     |
@@ -36,10 +35,6 @@ QUẢN LÝ KỸ THUẬT**
 | **6. HỆ THỐNG ĐƯỜNG GIAO THÔNG:** |
 | **7. HỆ THỐNG CỨU HOẢ:**          |
 | **Thêm danh mục…**                |
-
-**  
-**
-
 **QUẢN LÝ KỸ THUẬT**
 
 | **TỔNG QUAN KHU KỸ THUẬT** | **DANH SÁCH CÁN BỘ, CMKT** | **KHO TRẠM XƯỞNG** | **VŨ KHÍ TRANG BỊ** | **TRANG THIẾT BỊ KỸ THUẬT** | **PHƯƠNG TIỆN** | **VẬT TƯ** |     | **(Thêm danh mục…)** |     |     |
@@ -71,7 +66,6 @@ QUẢN LÝ KỸ THUẬT**
 | **7**  |                    |               |                               |                      |             |
 |        | **Thêm hàng…**     |               |                               |                      |             |
 
-**  
 QUẢN LÝ KỸ THUẬT**
 
 | **TT** | **KHO TRẠM XƯỞNG** | **CHỨC NĂNG** | **THỦ KHO, NGƯỜI ĐẢM NHIỆM**  | **ĐƠN VỊ PHỤ TRÁCH** | **Ghi chú** |
@@ -81,7 +75,6 @@ QUẢN LÝ KỸ THUẬT**
 | **DIỆN TÍCH** | **THÁNG NĂM XÂY DỰNG, SỬA CHỮA** | **TRANG BỊ, VẬT TƯ** | **KIỂM TRA KHO TRẠM XƯỞNG** | **ĐĂNG KÝ RA VÀO KHO TRẠM XƯỞNG** | **GIAO NHẬN TẠM THỜI** | **XUẤT KHO** | **NHẬP KHO** | **Thêm mục…** |
 |---------------|----------------------------------|----------------------|-----------------------------|-----------------------------------|------------------------|--------------|--------------|---------------|
 
-**  
 QUẢN LÝ KỸ THUẬT**
 
 | **TT** | **KHO TRẠM XƯỞNG** | **CHỨC NĂNG** | **THỦ KHO, NGƯỜI ĐẢM NHIỆM**  | **ĐƠN VỊ PHỤ TRÁCH** | **Ghi chú** |
@@ -91,7 +84,6 @@ QUẢN LÝ KỸ THUẬT**
 | **DIỆN TÍCH** | **THÁNG NĂM XÂY DỰNG, SỬA CHỮA** | **TRANG BỊ, VẬT TƯ** | **KIỂM TRA KHO TRẠM XƯỞNG** | **ĐĂNG KÝ RA VÀO KHO TRẠM XƯỞNG** | **GIAO NHẬN TẠM THỜI** | **XUẤT KHO** | **NHẬP KHO** | **Thêm mục…** |
 |---------------|----------------------------------|----------------------|-----------------------------|-----------------------------------|------------------------|--------------|--------------|---------------|
 
-**  
 QUẢN LÝ KỸ THUẬT**
 
 | **TT** | **KHO TRẠM XƯỞNG** | **CHỨC NĂNG** | **THỦ KHO, NGƯỜI ĐẢM NHIỆM**  | **ĐƠN VỊ PHỤ TRÁCH** | **Ghi chú** |
@@ -101,45 +93,3 @@ QUẢN LÝ KỸ THUẬT**
 | **DIỆN TÍCH** | **THÁNG NĂM XÂY DỰNG, SỬA CHỮA** | **TRANG BỊ, VẬT TƯ** | **KIỂM TRA KHO TRẠM XƯỞNG** | **ĐĂNG KÝ RA VÀO KHO TRẠM XƯỞNG** | **GIAO NHẬN TẠM THỜI** | **XUẤT KHO** | **NHẬP KHO** | **Thêm mục…** |
 |---------------|----------------------------------|----------------------|-----------------------------|-----------------------------------|------------------------|--------------|--------------|---------------|
 |               |                                  |                      |                             |                                   |                        |              |              |               |
-
-**  
-**
-
-**  
-**
-
-**  
-**
-
-**  
-**
-
-**  
-**
-
-**  
-**
-
-**  
-**
-
-**  
-**
-
-**  
-**
-
-**  
-**
-
-**  
-**
-
-**  
-**
-
-**  
-**
-
-**  
-**

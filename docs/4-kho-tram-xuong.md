@@ -14,7 +14,6 @@
 | **7**  |                    |               |                               |                      |               |
 |        | **Thêm hàng…**     |               |                               |                      |               |
 
-**  
 QUẢN LÝ KỸ THUẬT**
 
 | **TỔNG QUAN KHU KỸ THUẬT** |        | **DANH SÁCH CÁN BỘ, CMKT** |           | **KHO TRẠM XƯỞNG** | **VŨ KHÍ TRANG BỊ** |                               | **TRANG THIẾT BỊ KỸ THUẬT** | **PHƯƠNG TIỆN** | **VẬT TƯ** |     |            | **(Thêm danh mục…)** |     |     |     |
@@ -42,10 +41,6 @@ QUẢN LÝ KỸ THUẬT**
 |        |                          |                |                   |               |                         |               |              |
 |        |                          |                |                   |               |                         |               |              |
 |        | **Thêm hàng**            |                |                   |               |                         |               |              |
-
-**  
-**
-
 **QUẢN LÝ KỸ THUẬT**
 
 | **TT** | **KHO TRẠM XƯỞNG** | **CHỨC NĂNG** | **THỦ KHO, NGƯỜI ĐẢM NHIỆM**  | **ĐƠN VỊ PHỤ TRÁCH** | **Ghi chú** |
@@ -63,10 +58,6 @@ QUẢN LÝ KỸ THUẬT**
 |        |                    |                           |             |                       |              |                      |                   |              |
 |        |                    |                           |             |                       |              |                      |                   |              |
 |        | **Thêm hàng**      |                           |             |                       |              |                      |                   |              |
-
-**  
-**
-
 **QUẢN LÝ KỸ THUẬT**
 
 | **TT** | **KHO TRẠM XƯỞNG** | **CHỨC NĂNG** | **THỦ KHO, NGƯỜI ĐẢM NHIỆM**  | **ĐƠN VỊ PHỤ TRÁCH** | **Ghi chú** |
@@ -166,10 +157,6 @@ QUẢN LÝ KỸ THUẬT**
 </tr>
 </tbody>
 </table>
-
-**  
-**
-
 **QUẢN LÝ KỸ THUẬT**
 
 | **TT** | **KHO TRẠM XƯỞNG** | **CHỨC NĂNG** | **THỦ KHO, NGƯỜI ĐẢM NHIỆM**  | **ĐƠN VỊ PHỤ TRÁCH** | **Ghi chú** |
@@ -233,10 +220,6 @@ QUẢN LÝ KỸ THUẬT**
 </tr>
 </tbody>
 </table>
-
-**  
-**
-
 **QUẢN LÝ KỸ THUẬT**
 
 | **TT** | **KHO TRẠM XƯỞNG** | **CHỨC NĂNG** | **THỦ KHO, NGƯỜI ĐẢM NHIỆM**  | **ĐƠN VỊ PHỤ TRÁCH** | **Ghi chú** |

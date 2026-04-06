@@ -6,6 +6,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
+    "server": "node server.js",
     "package": "electron-builder --dir",
     "test": "echo \"No tests\" && exit 0"
   },
@@ -26,13 +27,20 @@
     "electron-builder": "^26.0.12"
   },
   "dependencies": {
-    "better-sqlite3": "^11.9.1"
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.8.0",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.3.2",
+    "express-session": "^1.19.0",
+    "express-validator": "^7.3.2"
   },
   "build": {
     "appId": "com.technical-manament.app",
     "productName": "Quản Lý Kỹ Thuật",
     "files": [
       "src/**/*",
+      "public/**/*",
+      "server.js",
       "package.json"
     ],
     "directories": {

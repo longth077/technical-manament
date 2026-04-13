@@ -3,6 +3,7 @@ import * as warehouseService from '../services/warehouseService';
 import DataTable from '../components/DataTable';
 import FormModal from '../components/FormModal';
 import Alert from '../components/Alert';
+import ExcelButtons from '../components/ExcelButtons';
 
 const WH_COLUMNS = [
   { key: 'name', label: 'Kho trạm xưởng' },
@@ -157,7 +158,15 @@ export default function WarehousesPage() {
     <div className="page">
       <div className="page-header">
         <h2>Kho Trạm Xưởng</h2>
-        <button className="btn btn-success" onClick={handleAddWh}>+ Thêm kho</button>
+        <div className="page-header-actions">
+          <ExcelButtons
+            exportUrl="/api/excel/warehouses/export"
+            importUrl="/api/excel/warehouses/import"
+            onImportSuccess={(msg) => { setAlert({ message: msg, type: 'success' }); loadWarehouses(); }}
+            onError={(msg) => setAlert({ message: msg, type: 'error' })}
+          />
+          <button className="btn btn-success" onClick={handleAddWh}>+ Thêm kho</button>
+        </div>
       </div>
 
       {alert && <Alert message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
@@ -209,7 +218,12 @@ export default function WarehousesPage() {
             ) : (
               <>
                 <div className="page-header">
-                  <span />
+                  <ExcelButtons
+                    exportUrl={`/api/excel/warehouses/${selected._id || selected.id}/${activeTab}/export`}
+                    importUrl={`/api/excel/warehouses/${selected._id || selected.id}/${activeTab}/import`}
+                    onImportSuccess={(msg) => { setAlert({ message: msg, type: 'success' }); loadSubData(); }}
+                    onError={(msg) => setAlert({ message: msg, type: 'error' })}
+                  />
                   <button className="btn btn-success btn-sm" onClick={handleAddSub}>+ Thêm</button>
                 </div>
                 <DataTable

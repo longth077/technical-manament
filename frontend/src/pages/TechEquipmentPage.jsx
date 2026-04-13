@@ -3,6 +3,7 @@ import * as techEquipmentService from '../services/techEquipmentService';
 import DataTable from '../components/DataTable';
 import FormModal from '../components/FormModal';
 import Alert from '../components/Alert';
+import ExcelButtons from '../components/ExcelButtons';
 
 const COLUMNS = [
   { key: 'name', label: 'Trang thiết bị KT' },
@@ -55,7 +56,15 @@ export default function TechEquipmentPage() {
     <div className="page">
       <div className="page-header">
         <h2>Trang Thiết Bị Kỹ Thuật</h2>
-        <button className="btn btn-success" onClick={handleAdd}>+ Thêm mới</button>
+        <div className="page-header-actions">
+          <ExcelButtons
+            exportUrl="/api/excel/tech-equipment/export"
+            importUrl="/api/excel/tech-equipment/import"
+            onImportSuccess={(msg) => { setAlert({ message: msg, type: 'success' }); load(); }}
+            onError={(msg) => setAlert({ message: msg, type: 'error' })}
+          />
+          <button className="btn btn-success" onClick={handleAdd}>+ Thêm mới</button>
+        </div>
       </div>
       {alert && <Alert message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
       <DataTable columns={COLUMNS} data={data} onEdit={handleEdit} onDelete={handleDelete} />

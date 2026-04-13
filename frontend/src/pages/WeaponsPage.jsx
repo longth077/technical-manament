@@ -3,6 +3,7 @@ import * as weaponService from '../services/weaponService';
 import DataTable from '../components/DataTable';
 import FormModal from '../components/FormModal';
 import Alert from '../components/Alert';
+import ExcelButtons from '../components/ExcelButtons';
 
 const COLUMNS = [
   { key: 'name', label: 'Vũ khí trang bị' },
@@ -53,7 +54,15 @@ export default function WeaponsPage() {
     <div className="page">
       <div className="page-header">
         <h2>Vũ Khí Trang Bị</h2>
-        <button className="btn btn-success" onClick={handleAdd}>+ Thêm mới</button>
+        <div className="page-header-actions">
+          <ExcelButtons
+            exportUrl="/api/excel/weapons/export"
+            importUrl="/api/excel/weapons/import"
+            onImportSuccess={(msg) => { setAlert({ message: msg, type: 'success' }); load(); }}
+            onError={(msg) => setAlert({ message: msg, type: 'error' })}
+          />
+          <button className="btn btn-success" onClick={handleAdd}>+ Thêm mới</button>
+        </div>
       </div>
       {alert && <Alert message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
       <DataTable columns={COLUMNS} data={data} onEdit={handleEdit} onDelete={handleDelete} />

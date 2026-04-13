@@ -558,6 +558,37 @@ body,
 }
 
 /* ===========================
+   Excel Buttons
+   =========================== */
+.excel-buttons {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.btn-excel {
+  background: #217346;
+  color: var(--white);
+}
+.btn-excel:hover:not(:disabled) {
+  background: #1a5c38;
+}
+
+.btn-excel-import {
+  background: #0d6efd;
+  color: var(--white);
+}
+.btn-excel-import:hover:not(:disabled) {
+  background: #0b5ed7;
+}
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ===========================
    Responsive
    =========================== */
 @media (max-width: 768px) {

@@ -3,6 +3,7 @@ import * as vehicleService from '../services/vehicleService';
 import DataTable from '../components/DataTable';
 import FormModal from '../components/FormModal';
 import Alert from '../components/Alert';
+import ExcelButtons from '../components/ExcelButtons';
 
 const COLUMNS = [
   { key: 'name', label: 'Phương tiện' },
@@ -56,7 +57,15 @@ export default function VehiclesPage() {
     <div className="page">
       <div className="page-header">
         <h2>Phương Tiện</h2>
-        <button className="btn btn-success" onClick={handleAdd}>+ Thêm mới</button>
+        <div className="page-header-actions">
+          <ExcelButtons
+            exportUrl="/api/excel/vehicles/export"
+            importUrl="/api/excel/vehicles/import"
+            onImportSuccess={(msg) => { setAlert({ message: msg, type: 'success' }); load(); }}
+            onError={(msg) => setAlert({ message: msg, type: 'error' })}
+          />
+          <button className="btn btn-success" onClick={handleAdd}>+ Thêm mới</button>
+        </div>
       </div>
       {alert && <Alert message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
       <DataTable columns={COLUMNS} data={data} onEdit={handleEdit} onDelete={handleDelete} />

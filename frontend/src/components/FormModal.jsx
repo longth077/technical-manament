@@ -55,7 +55,7 @@ export default function FormModal({ title, fields, initialData, onSubmit, onClos
           </div>
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Huỷ
+              Hủy
             </button>
             <button type="submit" className="btn btn-primary">
               Lưu

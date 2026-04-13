@@ -13,5 +13,5 @@ export function logout() {
 }
 
 export function getProfile() {
-  return get('/api/auth/profile');
+  return get('/api/auth/me');
 }

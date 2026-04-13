@@ -1,0 +1,23 @@
+{
+  "name": "technical-manament-backend",
+  "version": "1.0.0",
+  "description": "Backend for Technical Management System",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "express-validator": "^7.2.1",
+    "mysql2": "^3.12.0",
+    "sequelize": "^6.37.5"
+  }
+}

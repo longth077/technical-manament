@@ -1,50 +1,23 @@
 {
   "name": "technical-manament",
-  "version": "1.0.0",
-  "description": "Quản Lý Kỹ Thuật - Technical Management Application",
-  "main": "src/main.js",
+  "version": "2.0.0",
+  "description": "Quản Lý Kỹ Thuật - Technical Management System (Backend + Frontend)",
+  "private": true,
   "scripts": {
-    "start": "electron .",
-    "dev": "electron . --dev",
-    "server": "node server.js",
-    "package": "electron-builder --dir",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
     "test": "echo \"No tests\" && exit 0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/longth077/technical-manament.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/longth077/technical-manament/issues"
-  },
-  "homepage": "https://github.com/longth077/technical-manament#readme",
-  "devDependencies": {
-    "electron": "^41.0.0",
-    "electron-builder": "^26.0.12"
-  },
-  "dependencies": {
-    "bcrypt": "^6.0.0",
-    "better-sqlite3": "^12.8.0",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.3.2",
-    "express-session": "^1.19.0",
-    "express-validator": "^7.3.2"
-  },
-  "build": {
-    "appId": "com.technical-manament.app",
-    "productName": "Quản Lý Kỹ Thuật",
-    "files": [
-      "src/**/*",
-      "public/**/*",
-      "server.js",
-      "package.json"
-    ],
-    "directories": {
-      "output": "dist"
-    }
-  }
+  "license": "ISC"
 }

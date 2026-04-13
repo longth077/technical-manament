@@ -9,6 +9,7 @@ const weaponRoutes = require('./weapons');
 const techEquipmentRoutes = require('./techEquipment');
 const vehicleRoutes = require('./vehicles');
 const materialRoutes = require('./materials');
+const excelRoutes = require('./excel');
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use('/weapons', weaponRoutes);
 router.use('/tech-equipment', techEquipmentRoutes);
 router.use('/vehicles', vehicleRoutes);
 router.use('/materials', materialRoutes);
+router.use('/excel', excelRoutes);
 
 module.exports = router;

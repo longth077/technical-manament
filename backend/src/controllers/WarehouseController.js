@@ -1,7 +1,5 @@
 const warehouseService = require('../services/WarehouseService');
 
-const SUB_TABLE_TYPES = ['equipment', 'inspections', 'access', 'handover', 'exports', 'imports', 'lightning'];
-
 class WarehouseController {
   async getAll(req, res, next) {
     try {

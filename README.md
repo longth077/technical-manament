@@ -1,63 +1,39 @@
-# Quản Lý Kỹ Thuật (Technical Management)
+# Technical Management
 
-Web-based application for managing technical resources at the Bomb and Mine Technology Center (Trung Tâm Công Nghệ Xử Lý Bom Mìn).
+Separated backend/frontend implementation for technical management.
 
-## Features
+## Stack
+- Backend: Node.js 22, Express, Sequelize ORM, MySQL 8.4.8
+- Frontend: React (Vite)
 
-- **Tổng Quan Khu Kỹ Thuật (Technical Area Overview)**: Manage location, area, systems info
-- **Danh Sách Cán Bộ (Staff List)**: Track personnel with rank, position, assignments
-- **Kho Trạm Xưởng (Warehouses/Workshops)**: Full warehouse management including:
-  - Equipment and materials tracking
-  - Inspection records
-  - Entry/exit registration
-  - Temporary handover management
-  - Import/export operations
-  - Lightning protection records
-- **Vũ Khí Trang Bị (Weapons/Equipment)**: Weapons inventory
-- **Trang Thiết Bị Kỹ Thuật (Technical Equipment)**: Equipment tracking with hours
-- **Phương Tiện (Vehicles)**: Vehicle fleet management
-- **Vật Tư (Materials)**: Materials inventory
+## Default admin
+- Username: `admin`
+- Email: `thanhpxd49@gmail.com`
+- Password: `dank4920132018`
 
-## Tech Stack
-
-- **Node.js + Express** - Backend server and APIs
-- **better-sqlite3** - Local SQLite database
-- **HTML/CSS/JS** - Frontend (no framework)
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and npm
-
-### Installation
-
+## Backend
 ```bash
+cd backend
+cp .env.example .env
 npm install
-```
-
-## Running the Application
-
-```bash
 npm start
 ```
 
-The server runs at `http://localhost:3000`.
-
-## Project Structure
-
-```
-server.js                      # Express server entry point
-public/                        # Static frontend pages and assets
-src/
-├── auth-database.js           # Authentication database setup
-├── database.js                # SQLite database layer
-├── middleware/
-│   └── auth.js                # Auth middleware
-└── routes/
-    └── auth.js                # Auth routes
+## Frontend
+```bash
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
 ```
 
-## Data Storage
-
-Data is stored locally using SQLite in the `data/` directory. The database is created automatically on first run.
+## Implemented capabilities
+- Basic authentication with encrypted passwords (bcrypt)
+- Signup with admin approval workflow
+- Admin page actions: approve signup, delete user, assign role (`admin`, `user`, `readonly`)
+- Role enforcement: `readonly` can view only; `user` and `admin` can edit entities
+- Controller/service/repository layer with ORM for MySQL
+- Generic CRUD APIs for entities in `database-schema.sql`
+- Admin data transfer: export/import all data in SQL and Excel
+- Per-entity report export to Excel for `admin` and `user`
+- React UI with validation, API service layer, entity pages, admin screens, and export actions

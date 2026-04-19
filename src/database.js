@@ -1,10 +1,14 @@
 const BetterSqlite3 = require('better-sqlite3');
+const fs = require('fs');
 const path = require('path');
-const { app } = require('electron');
 
 class Database {
   constructor() {
-    const dbPath = path.join(app.getPath('userData'), 'technical-management.db');
+    const dataDir = path.join(__dirname, '..', 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    const dbPath = path.join(dataDir, 'technical-management.db');
     this.db = new BetterSqlite3(dbPath);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');

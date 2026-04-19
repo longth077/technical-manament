@@ -2,12 +2,11 @@
   "name": "technical-manament",
   "version": "1.0.0",
   "description": "Quản Lý Kỹ Thuật - Technical Management Application",
-  "main": "src/main.js",
+  "main": "server.js",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron . --dev",
+    "start": "node server.js",
+    "dev": "node server.js",
     "server": "node server.js",
-    "package": "electron-builder --dir",
     "test": "echo \"No tests\" && exit 0"
   },
   "repository": {
@@ -22,10 +21,6 @@
     "url": "https://github.com/longth077/technical-manament/issues"
   },
   "homepage": "https://github.com/longth077/technical-manament#readme",
-  "devDependencies": {
-    "electron": "^41.0.0",
-    "electron-builder": "^26.0.12"
-  },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.8.0",
@@ -33,18 +28,5 @@
     "express-rate-limit": "^8.3.2",
     "express-session": "^1.19.0",
     "express-validator": "^7.3.2"
-  },
-  "build": {
-    "appId": "com.technical-manament.app",
-    "productName": "Quản Lý Kỹ Thuật",
-    "files": [
-      "src/**/*",
-      "public/**/*",
-      "server.js",
-      "package.json"
-    ],
-    "directories": {
-      "output": "dist"
-    }
   }
 }

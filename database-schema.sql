@@ -1,62 +1,53 @@
 -- ============================================================================
 -- DATABASE SCHEMA: QUẢN LÝ KỸ THUẬT (Technical Management)
 -- ============================================================================
--- Database Engine: SQLite (better-sqlite3)
+-- Database Engine: MySQL 8.4.8
 -- Generated from: "Phân tích phần mềm quản lý kỹ thuật.docx"
 -- ============================================================================
-
-PRAGMA journal_mode = WAL;
-PRAGMA foreign_keys = ON;
 
 -- ============================================================================
 -- 1. USERS (Authentication)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS users (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    username    TEXT    NOT NULL UNIQUE,
-    email       TEXT    NOT NULL UNIQUE,
-    password    TEXT    NOT NULL,
-    full_name   TEXT    NOT NULL,
-    role        TEXT    NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
-    created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+    id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    username    VARCHAR(255) NOT NULL UNIQUE,
+    email       VARCHAR(255) NOT NULL UNIQUE,
+    password    VARCHAR(255) NOT NULL,
+    full_name   VARCHAR(255) NOT NULL,
+    role        VARCHAR(255) NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
+    created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TRIGGER IF NOT EXISTS users_updated_at
-AFTER UPDATE ON users
-FOR EACH ROW
-BEGIN
-    UPDATE users SET updated_at = datetime('now') WHERE id = OLD.id;
-END;
 
 -- ============================================================================
 -- 2. UNIT INFO (Thông tin đơn vị) - singleton row
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS unit_info (
-    id                  INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-    unit_name           TEXT    NOT NULL DEFAULT 'TRUNG TÂM CÔNG NGHỆ XỬ LÝ BOM MÌN',
-    technical_officer   TEXT    NOT NULL DEFAULT '',
-    statistician        TEXT    NOT NULL DEFAULT ''
-);
+    id                  TINYINT UNSIGNED NOT NULL DEFAULT 1 PRIMARY KEY CHECK (id = 1),
+    unit_name           VARCHAR(255) NOT NULL DEFAULT 'TRUNG TÂM CÔNG NGHỆ XỬ LÝ BOM MÌN',
+    technical_officer   VARCHAR(255) NOT NULL DEFAULT '',
+    statistician        VARCHAR(255) NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT OR IGNORE INTO unit_info (id) VALUES (1);
+INSERT IGNORE INTO unit_info (id) VALUES (1);
 
 -- ============================================================================
 -- 3. OVERVIEW (Tổng quan khu kỹ thuật) - singleton row
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS overview (
-    id                  INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-    position            TEXT    NOT NULL DEFAULT '',
-    area                TEXT    NOT NULL DEFAULT '',
-    warehouse_system    TEXT    NOT NULL DEFAULT '',
-    fence_system        TEXT    NOT NULL DEFAULT '',
-    road_system         TEXT    NOT NULL DEFAULT '',
-    fire_system         TEXT    NOT NULL DEFAULT '',
-    terrain_map         TEXT    NOT NULL DEFAULT '',
-    land_certificate    TEXT    NOT NULL DEFAULT ''
-);
+    id                  TINYINT UNSIGNED NOT NULL DEFAULT 1 PRIMARY KEY CHECK (id = 1),
+    position            VARCHAR(255) NOT NULL DEFAULT '',
+    area                VARCHAR(255) NOT NULL DEFAULT '',
+    warehouse_system    VARCHAR(255) NOT NULL DEFAULT '',
+    fence_system        VARCHAR(255) NOT NULL DEFAULT '',
+    road_system         VARCHAR(255) NOT NULL DEFAULT '',
+    fire_system         VARCHAR(255) NOT NULL DEFAULT '',
+    terrain_map         VARCHAR(255) NOT NULL DEFAULT '',
+    land_certificate    VARCHAR(255) NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT OR IGNORE INTO overview (id) VALUES (1);
+INSERT IGNORE INTO overview (id) VALUES (1);
 
 -- ============================================================================
 -- 4. STAFF (Danh sách cán bộ, chuyên môn kỹ thuật)
@@ -70,11 +61,11 @@ INSERT OR IGNORE INTO overview (id) VALUES (1);
 --   - Warehouse assignment: Required (can be added later)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS staff (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    full_name           TEXT    NOT NULL CHECK (length(trim(full_name)) > 0),
-    date_of_birth       TEXT    DEFAULT '',
-    id_number           TEXT    NOT NULL CHECK (length(trim(id_number)) > 0),
-    rank                TEXT    NOT NULL CHECK (
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    full_name           VARCHAR(255) NOT NULL CHECK (length(trim(full_name)) > 0),
+    date_of_birth       DATE DEFAULT NULL,
+    id_number           VARCHAR(255) NOT NULL CHECK (length(trim(id_number)) > 0),
+    rank                VARCHAR(255) NOT NULL CHECK (
                             rank IN (
                                 'Thiếu úy', 'Trung úy', 'Thượng uý', 'Đại úy',
                                 'Thiếu tá', 'Trung tá', 'Thượng tá', 'Đại tá',
@@ -82,52 +73,28 @@ CREATE TABLE IF NOT EXISTS staff (
                                 'Đại úy CN', 'Thiếu tá CN', 'Trung tá CN'
                             )
                         ),
-    position            TEXT    NOT NULL DEFAULT '',
-    unit_department     TEXT    NOT NULL DEFAULT '',
-    education           TEXT    NOT NULL DEFAULT '' CHECK (
+    position            VARCHAR(255) NOT NULL DEFAULT '',
+    unit_department     VARCHAR(255) NOT NULL DEFAULT '',
+    education           VARCHAR(255) NOT NULL DEFAULT '' CHECK (
                             education IN (
                                 '', 'Sơ cấp', 'Trung cấp', 'Cao đẳng',
                                 'Đại học', 'Thạc sĩ', 'Khác'
                             )
                         ),
-    assigned_warehouse  TEXT    NOT NULL DEFAULT '',
-    assigned_weapons    TEXT    NOT NULL DEFAULT '',
-    assigned_vehicles   TEXT    NOT NULL DEFAULT '',
-    assigned_equipment  TEXT    NOT NULL DEFAULT '',
-    created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at          TEXT    NOT NULL DEFAULT (datetime('now'))
+    assigned_warehouse  VARCHAR(255) NOT NULL DEFAULT '',
+    assigned_weapons    VARCHAR(255) NOT NULL DEFAULT '',
+    assigned_vehicles   VARCHAR(255) NOT NULL DEFAULT '',
+    assigned_equipment  VARCHAR(255) NOT NULL DEFAULT '',
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TRIGGER IF NOT EXISTS staff_updated_at
-AFTER UPDATE ON staff
-FOR EACH ROW
-BEGIN
-    UPDATE staff SET updated_at = datetime('now') WHERE id = OLD.id;
-END;
 
-CREATE TRIGGER IF NOT EXISTS staff_validate_dob_insert
-BEFORE INSERT ON staff
-FOR EACH ROW
-WHEN NEW.date_of_birth IS NOT NULL
-     AND NEW.date_of_birth <> ''
-     AND date(NEW.date_of_birth) > date('now')
-BEGIN
-    SELECT RAISE(ABORT, 'date_of_birth cannot be greater than current date');
-END;
 
-CREATE TRIGGER IF NOT EXISTS staff_validate_dob_update
-BEFORE UPDATE OF date_of_birth ON staff
-FOR EACH ROW
-WHEN NEW.date_of_birth IS NOT NULL
-     AND NEW.date_of_birth <> ''
-     AND date(NEW.date_of_birth) > date('now')
-BEGIN
-    SELECT RAISE(ABORT, 'date_of_birth cannot be greater than current date');
-END;
 
-CREATE INDEX IF NOT EXISTS idx_staff_full_name ON staff(full_name);
-CREATE INDEX IF NOT EXISTS idx_staff_rank ON staff(rank);
-CREATE INDEX IF NOT EXISTS idx_staff_unit_department ON staff(unit_department);
+CREATE INDEX idx_staff_full_name ON staff(full_name);
+CREATE INDEX idx_staff_rank ON staff(rank);
+CREATE INDEX idx_staff_unit_department ON staff(unit_department);
 
 -- ============================================================================
 -- 5. WAREHOUSES (Kho/Trạm/Xưởng)
@@ -140,196 +107,190 @@ CREATE INDEX IF NOT EXISTS idx_staff_unit_department ON staff(unit_department);
 --   - managing_unit: Optional
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS warehouses (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    code                TEXT    NOT NULL CHECK (length(trim(code)) > 0),
-    function_desc       TEXT    NOT NULL CHECK (length(trim(function_desc)) > 0),
-    keeper              TEXT    NOT NULL DEFAULT '',
-    managing_unit       TEXT    NOT NULL DEFAULT '',
-    area                TEXT    NOT NULL DEFAULT '',
-    construction_date   TEXT    NOT NULL DEFAULT '',
-    notes               TEXT    NOT NULL DEFAULT '',
-    created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at          TEXT    NOT NULL DEFAULT (datetime('now'))
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    code                VARCHAR(255) NOT NULL CHECK (length(trim(code)) > 0),
+    function_desc       VARCHAR(255) NOT NULL CHECK (length(trim(function_desc)) > 0),
+    keeper              VARCHAR(255) NOT NULL DEFAULT '',
+    managing_unit       VARCHAR(255) NOT NULL DEFAULT '',
+    area                VARCHAR(255) NOT NULL DEFAULT '',
+    construction_date   VARCHAR(255) NOT NULL DEFAULT '',
+    notes               VARCHAR(255) NOT NULL DEFAULT '',
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TRIGGER IF NOT EXISTS warehouses_updated_at
-AFTER UPDATE ON warehouses
-FOR EACH ROW
-BEGIN
-    UPDATE warehouses SET updated_at = datetime('now') WHERE id = OLD.id;
-END;
 
-CREATE INDEX IF NOT EXISTS idx_warehouses_code ON warehouses(code);
-CREATE INDEX IF NOT EXISTS idx_warehouses_managing_unit ON warehouses(managing_unit);
+CREATE INDEX idx_warehouses_code ON warehouses(code);
+CREATE INDEX idx_warehouses_managing_unit ON warehouses(managing_unit);
 
 -- ============================================================================
 -- 5a. WAREHOUSE IMAGES (Hình ảnh kho/trạm/xưởng)
 -- Tab: Tổng quan - allows multiple images per warehouse
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS warehouse_images (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    warehouse_id    INTEGER NOT NULL,
-    file_path       TEXT    NOT NULL CHECK (length(trim(file_path)) > 0),
-    file_type       TEXT    NOT NULL DEFAULT 'image/jpeg' CHECK (
+    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    warehouse_id    BIGINT UNSIGNED NOT NULL,
+    file_path       VARCHAR(255) NOT NULL CHECK (length(trim(file_path)) > 0),
+    file_type       VARCHAR(255) NOT NULL DEFAULT 'image/jpeg' CHECK (
                         file_type IN ('image/jpeg', 'image/png')
                     ),
-    description     TEXT    NOT NULL DEFAULT '',
-    uploaded_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+    description     VARCHAR(255) NOT NULL DEFAULT '',
+    uploaded_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_warehouse_images_warehouse_id ON warehouse_images(warehouse_id);
+CREATE INDEX idx_warehouse_images_warehouse_id ON warehouse_images(warehouse_id);
 
 -- ============================================================================
 -- 5b. WAREHOUSE EQUIPMENT (Trang bị, vật tư trong kho)
 -- Tab: Trang bị, Vật tư
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS warehouse_equipment (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    warehouse_id    INTEGER NOT NULL,
-    name            TEXT    NOT NULL DEFAULT '',
-    model           TEXT    NOT NULL DEFAULT '',
-    country         TEXT    NOT NULL DEFAULT '',
-    certification   TEXT    NOT NULL DEFAULT '',
-    maintenance     TEXT    NOT NULL DEFAULT '',
-    import_export   TEXT    NOT NULL DEFAULT '',
+    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    warehouse_id    BIGINT UNSIGNED NOT NULL,
+    name            VARCHAR(255) NOT NULL DEFAULT '',
+    model           VARCHAR(255) NOT NULL DEFAULT '',
+    country         VARCHAR(255) NOT NULL DEFAULT '',
+    certification   VARCHAR(255) NOT NULL DEFAULT '',
+    maintenance     VARCHAR(255) NOT NULL DEFAULT '',
+    import_export   VARCHAR(255) NOT NULL DEFAULT '',
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_warehouse_equipment_warehouse_id ON warehouse_equipment(warehouse_id);
+CREATE INDEX idx_warehouse_equipment_warehouse_id ON warehouse_equipment(warehouse_id);
 
 -- ============================================================================
 -- 5c. WAREHOUSE INSPECTIONS (Kiểm tra kho trạm xưởng)
 -- Tab: Kiểm tra kho trạm xưởng
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS warehouse_inspections (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    warehouse_id        INTEGER NOT NULL,
-    date                TEXT    NOT NULL DEFAULT '',
-    inspector_name      TEXT    NOT NULL DEFAULT '',
-    inspector_position  TEXT    NOT NULL DEFAULT '',
-    content             TEXT    NOT NULL DEFAULT '',
-    evaluation          TEXT    NOT NULL DEFAULT '',
-    requirements        TEXT    NOT NULL DEFAULT '',
-    server_name         TEXT    NOT NULL DEFAULT '',
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    warehouse_id        BIGINT UNSIGNED NOT NULL,
+    date                VARCHAR(255) NOT NULL DEFAULT '',
+    inspector_name      VARCHAR(255) NOT NULL DEFAULT '',
+    inspector_position  VARCHAR(255) NOT NULL DEFAULT '',
+    content             VARCHAR(255) NOT NULL DEFAULT '',
+    evaluation          VARCHAR(255) NOT NULL DEFAULT '',
+    requirements        VARCHAR(255) NOT NULL DEFAULT '',
+    server_name         VARCHAR(255) NOT NULL DEFAULT '',
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_warehouse_inspections_warehouse_id ON warehouse_inspections(warehouse_id);
-CREATE INDEX IF NOT EXISTS idx_warehouse_inspections_date ON warehouse_inspections(date);
+CREATE INDEX idx_warehouse_inspections_warehouse_id ON warehouse_inspections(warehouse_id);
+CREATE INDEX idx_warehouse_inspections_date ON warehouse_inspections(date);
 
 -- ============================================================================
 -- 5d. WAREHOUSE ACCESS (Đăng ký ra vào kho trạm xưởng)
 -- Tab: Đăng ký ra vào
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS warehouse_access (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    warehouse_id        INTEGER NOT NULL,
-    date                TEXT    NOT NULL DEFAULT '',
-    visitor_name        TEXT    NOT NULL DEFAULT '',
-    companion_count     INTEGER NOT NULL DEFAULT 0 CHECK (companion_count >= 0),
-    unit                TEXT    NOT NULL DEFAULT '',
-    responsible_person  TEXT    NOT NULL DEFAULT '',
-    time_in             TEXT    NOT NULL DEFAULT '',
-    time_out            TEXT    NOT NULL DEFAULT '',
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    warehouse_id        BIGINT UNSIGNED NOT NULL,
+    date                VARCHAR(255) NOT NULL DEFAULT '',
+    visitor_name        VARCHAR(255) NOT NULL DEFAULT '',
+    companion_count     INT NOT NULL DEFAULT 0 CHECK (companion_count >= 0),
+    unit                VARCHAR(255) NOT NULL DEFAULT '',
+    responsible_person  VARCHAR(255) NOT NULL DEFAULT '',
+    time_in             VARCHAR(255) NOT NULL DEFAULT '',
+    time_out            VARCHAR(255) NOT NULL DEFAULT '',
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_warehouse_access_warehouse_id ON warehouse_access(warehouse_id);
-CREATE INDEX IF NOT EXISTS idx_warehouse_access_date ON warehouse_access(date);
+CREATE INDEX idx_warehouse_access_warehouse_id ON warehouse_access(warehouse_id);
+CREATE INDEX idx_warehouse_access_date ON warehouse_access(date);
 
 -- ============================================================================
 -- 5e. WAREHOUSE HANDOVER (Giao nhận tạm thời)
 -- Tab: Giao nhận tạm thời
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS warehouse_handover (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    warehouse_id        INTEGER NOT NULL,
-    equipment_name      TEXT    NOT NULL DEFAULT '',
-    unit                TEXT    NOT NULL DEFAULT '',
-    handover_date       TEXT    NOT NULL DEFAULT '',
-    quality_level       TEXT    NOT NULL DEFAULT '',
-    quantity            INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
-    giver               TEXT    NOT NULL DEFAULT '',
-    receiver            TEXT    NOT NULL DEFAULT '',
-    return_date         TEXT    NOT NULL DEFAULT '',
-    return_quality      TEXT    NOT NULL DEFAULT '',
-    return_quantity     INTEGER NOT NULL DEFAULT 0 CHECK (return_quantity >= 0),
-    return_giver        TEXT    NOT NULL DEFAULT '',
-    return_receiver     TEXT    NOT NULL DEFAULT '',
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    warehouse_id        BIGINT UNSIGNED NOT NULL,
+    equipment_name      VARCHAR(255) NOT NULL DEFAULT '',
+    unit                VARCHAR(255) NOT NULL DEFAULT '',
+    handover_date       VARCHAR(255) NOT NULL DEFAULT '',
+    quality_level       VARCHAR(255) NOT NULL DEFAULT '',
+    quantity            INT NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    giver               VARCHAR(255) NOT NULL DEFAULT '',
+    receiver            VARCHAR(255) NOT NULL DEFAULT '',
+    return_date         VARCHAR(255) NOT NULL DEFAULT '',
+    return_quality      VARCHAR(255) NOT NULL DEFAULT '',
+    return_quantity     INT NOT NULL DEFAULT 0 CHECK (return_quantity >= 0),
+    return_giver        VARCHAR(255) NOT NULL DEFAULT '',
+    return_receiver     VARCHAR(255) NOT NULL DEFAULT '',
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_warehouse_handover_warehouse_id ON warehouse_handover(warehouse_id);
+CREATE INDEX idx_warehouse_handover_warehouse_id ON warehouse_handover(warehouse_id);
 
 -- ============================================================================
 -- 5f. WAREHOUSE EXPORTS (Xuất kho)
 -- Tab: Xuất kho
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS warehouse_exports (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    warehouse_id        INTEGER NOT NULL,
-    receiver_name       TEXT    NOT NULL DEFAULT '',
-    receiver_unit       TEXT    NOT NULL DEFAULT '',
-    reason              TEXT    NOT NULL DEFAULT '',
-    item_name           TEXT    NOT NULL DEFAULT '',
-    unit_measure        TEXT    NOT NULL DEFAULT '',
-    required_quantity   REAL    NOT NULL DEFAULT 0 CHECK (required_quantity >= 0),
-    actual_quantity     REAL    NOT NULL DEFAULT 0 CHECK (actual_quantity >= 0),
-    unit_price          REAL    NOT NULL DEFAULT 0 CHECK (unit_price >= 0),
-    total_price         REAL    NOT NULL DEFAULT 0 CHECK (total_price >= 0),
-    notes               TEXT    NOT NULL DEFAULT '',
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    warehouse_id        BIGINT UNSIGNED NOT NULL,
+    receiver_name       VARCHAR(255) NOT NULL DEFAULT '',
+    receiver_unit       VARCHAR(255) NOT NULL DEFAULT '',
+    reason              VARCHAR(255) NOT NULL DEFAULT '',
+    item_name           VARCHAR(255) NOT NULL DEFAULT '',
+    unit_measure        VARCHAR(255) NOT NULL DEFAULT '',
+    required_quantity   DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (required_quantity >= 0),
+    actual_quantity     DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (actual_quantity >= 0),
+    unit_price          DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (unit_price >= 0),
+    total_price         DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (total_price >= 0),
+    notes               VARCHAR(255) NOT NULL DEFAULT '',
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_warehouse_exports_warehouse_id ON warehouse_exports(warehouse_id);
+CREATE INDEX idx_warehouse_exports_warehouse_id ON warehouse_exports(warehouse_id);
 
 -- ============================================================================
 -- 5g. WAREHOUSE IMPORTS (Nhập kho)
 -- Tab: Nhập kho
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS warehouse_imports (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    warehouse_id        INTEGER NOT NULL,
-    sender_name         TEXT    NOT NULL DEFAULT '',
-    sender_unit         TEXT    NOT NULL DEFAULT '',
-    reason              TEXT    NOT NULL DEFAULT '',
-    item_name           TEXT    NOT NULL DEFAULT '',
-    unit_measure        TEXT    NOT NULL DEFAULT '',
-    required_quantity   REAL    NOT NULL DEFAULT 0 CHECK (required_quantity >= 0),
-    actual_quantity     REAL    NOT NULL DEFAULT 0 CHECK (actual_quantity >= 0),
-    unit_price          REAL    NOT NULL DEFAULT 0 CHECK (unit_price >= 0),
-    total_price         REAL    NOT NULL DEFAULT 0 CHECK (total_price >= 0),
-    notes               TEXT    NOT NULL DEFAULT '',
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    warehouse_id        BIGINT UNSIGNED NOT NULL,
+    sender_name         VARCHAR(255) NOT NULL DEFAULT '',
+    sender_unit         VARCHAR(255) NOT NULL DEFAULT '',
+    reason              VARCHAR(255) NOT NULL DEFAULT '',
+    item_name           VARCHAR(255) NOT NULL DEFAULT '',
+    unit_measure        VARCHAR(255) NOT NULL DEFAULT '',
+    required_quantity   DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (required_quantity >= 0),
+    actual_quantity     DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (actual_quantity >= 0),
+    unit_price          DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (unit_price >= 0),
+    total_price         DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (total_price >= 0),
+    notes               VARCHAR(255) NOT NULL DEFAULT '',
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_warehouse_imports_warehouse_id ON warehouse_imports(warehouse_id);
+CREATE INDEX idx_warehouse_imports_warehouse_id ON warehouse_imports(warehouse_id);
 
 -- ============================================================================
 -- 5h. WAREHOUSE LIGHTNING (Chống sét)
 -- Tab: Chống sét
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS warehouse_lightning (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    warehouse_id        INTEGER NOT NULL,
-    date                TEXT    NOT NULL DEFAULT '',
-    weather             TEXT    NOT NULL DEFAULT '',
-    direct_rod1_rdo     TEXT    NOT NULL DEFAULT '',
-    direct_rod1_rxk     TEXT    NOT NULL DEFAULT '',
-    direct_rod1_result  TEXT    NOT NULL DEFAULT '',
-    direct_rod2_rdo     TEXT    NOT NULL DEFAULT '',
-    direct_rod2_rxk     TEXT    NOT NULL DEFAULT '',
-    direct_rod2_result  TEXT    NOT NULL DEFAULT '',
-    direct_rod3_rdo     TEXT    NOT NULL DEFAULT '',
-    direct_rod3_rxk     TEXT    NOT NULL DEFAULT '',
-    direct_rod3_result  TEXT    NOT NULL DEFAULT '',
-    induction_rdo       TEXT    NOT NULL DEFAULT '',
-    induction_result    TEXT    NOT NULL DEFAULT '',
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    warehouse_id        BIGINT UNSIGNED NOT NULL,
+    date                VARCHAR(255) NOT NULL DEFAULT '',
+    weather             VARCHAR(255) NOT NULL DEFAULT '',
+    direct_rod1_rdo     VARCHAR(255) NOT NULL DEFAULT '',
+    direct_rod1_rxk     VARCHAR(255) NOT NULL DEFAULT '',
+    direct_rod1_result  VARCHAR(255) NOT NULL DEFAULT '',
+    direct_rod2_rdo     VARCHAR(255) NOT NULL DEFAULT '',
+    direct_rod2_rxk     VARCHAR(255) NOT NULL DEFAULT '',
+    direct_rod2_result  VARCHAR(255) NOT NULL DEFAULT '',
+    direct_rod3_rdo     VARCHAR(255) NOT NULL DEFAULT '',
+    direct_rod3_rxk     VARCHAR(255) NOT NULL DEFAULT '',
+    direct_rod3_result  VARCHAR(255) NOT NULL DEFAULT '',
+    induction_rdo       VARCHAR(255) NOT NULL DEFAULT '',
+    induction_result    VARCHAR(255) NOT NULL DEFAULT '',
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_warehouse_lightning_warehouse_id ON warehouse_lightning(warehouse_id);
+CREATE INDEX idx_warehouse_lightning_warehouse_id ON warehouse_lightning(warehouse_id);
 
 -- ============================================================================
 -- 6. WEAPONS (Vũ khí trang bị)
@@ -342,46 +303,26 @@ CREATE INDEX IF NOT EXISTS idx_warehouse_lightning_warehouse_id ON warehouse_lig
 --   - Unit/personal allocation are numbers and total <= quantity
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS weapons (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                TEXT    NOT NULL CHECK (length(trim(name)) > 0),
-    classification      TEXT    NOT NULL DEFAULT '',
-    unit_measure        TEXT    NOT NULL DEFAULT '',
-    quantity            INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
-    country             TEXT    NOT NULL DEFAULT '',
-    year                INTEGER DEFAULT NULL,
-    assigned_unit       INTEGER NOT NULL DEFAULT 0 CHECK (assigned_unit >= 0),
-    assigned_individual INTEGER NOT NULL DEFAULT 0 CHECK (assigned_individual >= 0),
-    created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(255) NOT NULL CHECK (length(trim(name)) > 0),
+    classification      VARCHAR(255) NOT NULL DEFAULT '',
+    unit_measure        VARCHAR(255) NOT NULL DEFAULT '',
+    quantity            INT NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    country             VARCHAR(255) NOT NULL DEFAULT '',
+    year                INT DEFAULT NULL,
+    assigned_unit       INT NOT NULL DEFAULT 0 CHECK (assigned_unit >= 0),
+    assigned_individual INT NOT NULL DEFAULT 0 CHECK (assigned_individual >= 0),
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CHECK (year IS NULL OR year >= 1900),
     CHECK (assigned_unit + assigned_individual <= quantity)
 );
 
-CREATE TRIGGER IF NOT EXISTS weapons_updated_at
-AFTER UPDATE ON weapons
-FOR EACH ROW
-BEGIN
-    UPDATE weapons SET updated_at = datetime('now') WHERE id = OLD.id;
-END;
 
-CREATE TRIGGER IF NOT EXISTS weapons_validate_year_insert
-BEFORE INSERT ON weapons
-FOR EACH ROW
-WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
-BEGIN
-    SELECT RAISE(ABORT, 'year cannot be greater than current year');
-END;
 
-CREATE TRIGGER IF NOT EXISTS weapons_validate_year_update
-BEFORE UPDATE OF year ON weapons
-FOR EACH ROW
-WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
-BEGIN
-    SELECT RAISE(ABORT, 'year cannot be greater than current year');
-END;
 
-CREATE INDEX IF NOT EXISTS idx_weapons_name ON weapons(name);
-CREATE INDEX IF NOT EXISTS idx_weapons_classification ON weapons(classification);
+CREATE INDEX idx_weapons_name ON weapons(name);
+CREATE INDEX idx_weapons_classification ON weapons(classification);
 
 -- ============================================================================
 -- 7. TECH EQUIPMENT (Trang thiết bị kỹ thuật)
@@ -395,49 +336,29 @@ CREATE INDEX IF NOT EXISTS idx_weapons_classification ON weapons(classification)
 --   - allocation (biên chế): Number
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS tech_equipment (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                TEXT    NOT NULL CHECK (length(trim(name)) > 0),
-    classification      TEXT    NOT NULL DEFAULT '',
-    unit_measure        TEXT    NOT NULL DEFAULT '',
-    quantity            INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
-    country             TEXT    NOT NULL DEFAULT '',
-    year                INTEGER DEFAULT NULL,
-    allocation          INTEGER NOT NULL DEFAULT 0 CHECK (allocation >= 0),
-    repair              TEXT    NOT NULL DEFAULT '' CHECK (
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(255) NOT NULL CHECK (length(trim(name)) > 0),
+    classification      VARCHAR(255) NOT NULL DEFAULT '',
+    unit_measure        VARCHAR(255) NOT NULL DEFAULT '',
+    quantity            INT NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    country             VARCHAR(255) NOT NULL DEFAULT '',
+    year                INT DEFAULT NULL,
+    allocation          INT NOT NULL DEFAULT 0 CHECK (allocation >= 0),
+    repair              VARCHAR(255) NOT NULL DEFAULT '' CHECK (
                             repair IN ('', 'Chưa sửa', 'Đang sửa', 'Đã sửa')
                         ),
-    operating_hours     REAL    NOT NULL DEFAULT 0 CHECK (operating_hours >= 0),
-    created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+    operating_hours     DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (operating_hours >= 0),
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CHECK (year IS NULL OR year >= 1900),
     CHECK (allocation <= quantity)
 );
 
-CREATE TRIGGER IF NOT EXISTS tech_equipment_updated_at
-AFTER UPDATE ON tech_equipment
-FOR EACH ROW
-BEGIN
-    UPDATE tech_equipment SET updated_at = datetime('now') WHERE id = OLD.id;
-END;
 
-CREATE TRIGGER IF NOT EXISTS tech_equipment_validate_year_insert
-BEFORE INSERT ON tech_equipment
-FOR EACH ROW
-WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
-BEGIN
-    SELECT RAISE(ABORT, 'year cannot be greater than current year');
-END;
 
-CREATE TRIGGER IF NOT EXISTS tech_equipment_validate_year_update
-BEFORE UPDATE OF year ON tech_equipment
-FOR EACH ROW
-WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
-BEGIN
-    SELECT RAISE(ABORT, 'year cannot be greater than current year');
-END;
 
-CREATE INDEX IF NOT EXISTS idx_tech_equipment_name ON tech_equipment(name);
-CREATE INDEX IF NOT EXISTS idx_tech_equipment_classification ON tech_equipment(classification);
+CREATE INDEX idx_tech_equipment_name ON tech_equipment(name);
+CREATE INDEX idx_tech_equipment_classification ON tech_equipment(classification);
 
 -- ============================================================================
 -- 8. VEHICLES (Phương tiện)
@@ -453,50 +374,30 @@ CREATE INDEX IF NOT EXISTS idx_tech_equipment_classification ON tech_equipment(c
 --     non-negative validation only (no allocation<=quantity check)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS vehicles (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                TEXT    NOT NULL CHECK (length(trim(name)) > 0),
-    classification      TEXT    NOT NULL DEFAULT '',
-    brand               TEXT    NOT NULL DEFAULT '',
-    vehicle_type        TEXT    NOT NULL DEFAULT '',
-    country             TEXT    NOT NULL DEFAULT '',
-    year                INTEGER DEFAULT NULL,
-    allocation          INTEGER NOT NULL DEFAULT 0 CHECK (allocation >= 0),
-    repair              TEXT    NOT NULL DEFAULT '' CHECK (
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(255) NOT NULL CHECK (length(trim(name)) > 0),
+    classification      VARCHAR(255) NOT NULL DEFAULT '',
+    brand               VARCHAR(255) NOT NULL DEFAULT '',
+    vehicle_type        VARCHAR(255) NOT NULL DEFAULT '',
+    country             VARCHAR(255) NOT NULL DEFAULT '',
+    year                INT DEFAULT NULL,
+    allocation          INT NOT NULL DEFAULT 0 CHECK (allocation >= 0),
+    repair              VARCHAR(255) NOT NULL DEFAULT '' CHECK (
                             repair IN ('', 'Chưa sửa', 'Đang sửa', 'Đã sửa')
                         ),
-    operating_hours     REAL    NOT NULL DEFAULT 0 CHECK (operating_hours >= 0),
-    km                  REAL    NOT NULL DEFAULT 0 CHECK (km >= 0),
-    created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+    operating_hours     DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (operating_hours >= 0),
+    km                  DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (km >= 0),
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CHECK (year IS NULL OR year >= 1900)
 );
 
-CREATE TRIGGER IF NOT EXISTS vehicles_updated_at
-AFTER UPDATE ON vehicles
-FOR EACH ROW
-BEGIN
-    UPDATE vehicles SET updated_at = datetime('now') WHERE id = OLD.id;
-END;
 
-CREATE TRIGGER IF NOT EXISTS vehicles_validate_year_insert
-BEFORE INSERT ON vehicles
-FOR EACH ROW
-WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
-BEGIN
-    SELECT RAISE(ABORT, 'year cannot be greater than current year');
-END;
 
-CREATE TRIGGER IF NOT EXISTS vehicles_validate_year_update
-BEFORE UPDATE OF year ON vehicles
-FOR EACH ROW
-WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
-BEGIN
-    SELECT RAISE(ABORT, 'year cannot be greater than current year');
-END;
 
-CREATE INDEX IF NOT EXISTS idx_vehicles_name ON vehicles(name);
-CREATE INDEX IF NOT EXISTS idx_vehicles_brand ON vehicles(brand);
-CREATE INDEX IF NOT EXISTS idx_vehicles_vehicle_type ON vehicles(vehicle_type);
+CREATE INDEX idx_vehicles_name ON vehicles(name);
+CREATE INDEX idx_vehicles_brand ON vehicles(brand);
+CREATE INDEX idx_vehicles_vehicle_type ON vehicles(vehicle_type);
 
 -- ============================================================================
 -- 9. MATERIALS (Vật tư)
@@ -509,46 +410,26 @@ CREATE INDEX IF NOT EXISTS idx_vehicles_vehicle_type ON vehicles(vehicle_type);
 --   - Unit/personal allocation are numbers and total <= quantity
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS materials (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    name                TEXT    NOT NULL CHECK (length(trim(name)) > 0),
-    classification      TEXT    NOT NULL DEFAULT '',
-    unit_measure        TEXT    NOT NULL DEFAULT '',
-    quantity            INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
-    country             TEXT    NOT NULL DEFAULT '',
-    year                INTEGER DEFAULT NULL,
-    assigned_unit       INTEGER NOT NULL DEFAULT 0 CHECK (assigned_unit >= 0),
-    assigned_individual INTEGER NOT NULL DEFAULT 0 CHECK (assigned_individual >= 0),
-    created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(255) NOT NULL CHECK (length(trim(name)) > 0),
+    classification      VARCHAR(255) NOT NULL DEFAULT '',
+    unit_measure        VARCHAR(255) NOT NULL DEFAULT '',
+    quantity            INT NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    country             VARCHAR(255) NOT NULL DEFAULT '',
+    year                INT DEFAULT NULL,
+    assigned_unit       INT NOT NULL DEFAULT 0 CHECK (assigned_unit >= 0),
+    assigned_individual INT NOT NULL DEFAULT 0 CHECK (assigned_individual >= 0),
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CHECK (year IS NULL OR year >= 1900),
     CHECK (assigned_unit + assigned_individual <= quantity)
 );
 
-CREATE TRIGGER IF NOT EXISTS materials_updated_at
-AFTER UPDATE ON materials
-FOR EACH ROW
-BEGIN
-    UPDATE materials SET updated_at = datetime('now') WHERE id = OLD.id;
-END;
 
-CREATE TRIGGER IF NOT EXISTS materials_validate_year_insert
-BEFORE INSERT ON materials
-FOR EACH ROW
-WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
-BEGIN
-    SELECT RAISE(ABORT, 'year cannot be greater than current year');
-END;
 
-CREATE TRIGGER IF NOT EXISTS materials_validate_year_update
-BEFORE UPDATE OF year ON materials
-FOR EACH ROW
-WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
-BEGIN
-    SELECT RAISE(ABORT, 'year cannot be greater than current year');
-END;
 
-CREATE INDEX IF NOT EXISTS idx_materials_name ON materials(name);
-CREATE INDEX IF NOT EXISTS idx_materials_classification ON materials(classification);
+CREATE INDEX idx_materials_name ON materials(name);
+CREATE INDEX idx_materials_classification ON materials(classification);
 
 
 -- ============================================================================

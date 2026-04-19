@@ -12,8 +12,8 @@ const entities = [
 ];
 
 function App() {
-  const [usernameOrEmail, setUsernameOrEmail] = useState('admin');
-  const [password, setPassword] = useState('dank4920132018');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupUsername, setSignupUsername] = useState('');
@@ -65,17 +65,23 @@ function App() {
     }
   };
 
-  const restore = async () => {
+  useEffect(() => {
     if (!credential) return;
-    try {
-      const data = await Api.me(credential);
-      setUser(data.user);
-    } catch {
-      signOut();
-    }
-  };
-
-  useEffect(() => { restore(); }, []);
+    let active = true;
+    Api.me(credential)
+      .then((data) => {
+        if (active) setUser(data.user);
+      })
+      .catch(() => {
+        if (!active) return;
+        localStorage.removeItem('credential');
+        setCredential('');
+        setUser(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [credential]);
 
   if (!user) {
     return (

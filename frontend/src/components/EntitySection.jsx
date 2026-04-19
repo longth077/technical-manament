@@ -17,8 +17,6 @@ export default function EntitySection({ entity, credential, canEdit }) {
   const [draft, setDraft] = useState('{}');
 
   const loadRows = async () => {
-    setLoading(true);
-    setError('');
     try {
       const data = await Api.listEntity(entity, credential);
       setRows(data.rows || []);
@@ -30,8 +28,21 @@ export default function EntitySection({ entity, credential, canEdit }) {
   };
 
   useEffect(() => {
-    loadRows();
-  }, [entity]);
+    let active = true;
+    Api.listEntity(entity, credential)
+      .then((data) => {
+        if (active) setRows(data.rows || []);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [entity, credential]);
 
   const createRow = async () => {
     try {

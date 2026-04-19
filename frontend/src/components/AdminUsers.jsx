@@ -18,23 +18,47 @@ export default function AdminUsers({ credential }) {
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    let active = true;
+    Promise.all([Api.listUsers(credential), Api.listPendingUsers(credential)])
+      .then(([all, pend]) => {
+        if (!active) return;
+        setUsers(all.users || []);
+        setPending(pend.users || []);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [credential]);
 
   const approve = async (id) => {
-    await Api.approveUser(id, credential);
-    await load();
+    try {
+      await Api.approveUser(id, credential);
+      await load();
+    } catch (e) {
+      setError(e.message);
+    }
   };
 
   const setRole = async (id, role) => {
-    await Api.updateUserRole(id, role, credential);
-    await load();
+    try {
+      await Api.updateUserRole(id, role, credential);
+      await load();
+    } catch (e) {
+      setError(e.message);
+    }
   };
 
   const remove = async (id) => {
     if (!confirm('Delete user?')) return;
-    await Api.deleteUser(id, credential);
-    await load();
+    try {
+      await Api.deleteUser(id, credential);
+      await load();
+    } catch (e) {
+      setError(e.message);
+    }
   };
 
   return (

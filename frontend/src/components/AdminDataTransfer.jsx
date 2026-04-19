@@ -26,23 +26,41 @@ export default function AdminDataTransfer({ credential }) {
   const [message, setMessage] = useState('');
 
   const exportSql = async () => {
-    const sql = await Api.exportAllSql(credential);
-    downloadText(sql, 'technical-management.sql');
+    try {
+      const sql = await Api.exportAllSql(credential);
+      downloadText(sql, 'technical-management.sql');
+      setMessage('SQL export completed');
+    } catch (e) {
+      setMessage(e.message);
+    }
   };
 
   const exportExcel = async () => {
-    const blob = await Api.exportAllExcel(credential);
-    downloadBlob(blob, 'technical-management.xlsx');
+    try {
+      const blob = await Api.exportAllExcel(credential);
+      downloadBlob(blob, 'technical-management.xlsx');
+      setMessage('Excel export completed');
+    } catch (e) {
+      setMessage(e.message);
+    }
   };
 
   const importSql = async () => {
-    await Api.importSql(sqlInput, credential);
-    setMessage('SQL imported');
+    try {
+      await Api.importSql(sqlInput, credential);
+      setMessage('SQL imported');
+    } catch (e) {
+      setMessage(e.message);
+    }
   };
 
   const importExcel = async () => {
-    await Api.importExcel(excelBase64, credential);
-    setMessage('Excel imported');
+    try {
+      await Api.importExcel(excelBase64, credential);
+      setMessage('Excel imported');
+    } catch (e) {
+      setMessage(e.message);
+    }
   };
 
   return (

@@ -8,6 +8,48 @@ const sqlValue = (value) => {
   return `'${String(value).replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'`;
 };
 
+const parseSqlValues = (input) => {
+  const parts = [];
+  let current = '';
+  let inQuote = false;
+  let escaped = false;
+
+  for (const ch of input) {
+    if (escaped) {
+      current += ch;
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      current += ch;
+      escaped = true;
+      continue;
+    }
+    if (ch === "'") {
+      inQuote = !inQuote;
+      current += ch;
+      continue;
+    }
+    if (ch === ',' && !inQuote) {
+      parts.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  if (current.trim()) parts.push(current.trim());
+  return parts;
+};
+
+const parseSqlLiteral = (literal) => {
+  if (literal === 'NULL') return null;
+  if (literal.startsWith("'") && literal.endsWith("'")) {
+    return literal.slice(1, -1).replaceAll("\\'", "'").replaceAll('\\\\', '\\');
+  }
+  const num = Number(literal);
+  return Number.isNaN(num) ? literal : num;
+};
+
 class DataTransferService {
   constructor(models) {
     this.models = models;
@@ -47,8 +89,55 @@ class DataTransferService {
   }
 
   async importSql(sqlText) {
-    await sequelize.query(sqlText);
-    return { success: true };
+    const lines = sqlText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('--') && !line.startsWith('SET FOREIGN_KEY_CHECKS'));
+
+    const tx = await sequelize.transaction();
+    try {
+      for (const line of lines) {
+        if (line.startsWith('DELETE FROM ') && line.endsWith(';')) {
+          const entity = line.slice('DELETE FROM '.length, -1).trim();
+          if (!ENTITY_NAMES.includes(entity)) throw new Error(`Unsupported entity: ${entity}`);
+          await this.models[entity].destroy({ where: {}, truncate: true, transaction: tx, force: true });
+          continue;
+        }
+
+        if (line.startsWith('INSERT INTO ') && line.endsWith(';')) {
+          const payloadLine = line.slice('INSERT INTO '.length, -1);
+          const firstParen = payloadLine.indexOf('(');
+          const valuesToken = ') VALUES (';
+          const valuesPos = payloadLine.indexOf(valuesToken);
+          const lastParen = payloadLine.lastIndexOf(')');
+
+          if (firstParen <= 0 || valuesPos <= firstParen || lastParen <= valuesPos) {
+            throw new Error('Invalid SQL import format');
+          }
+
+          const entity = payloadLine.slice(0, firstParen).trim();
+          if (!ENTITY_NAMES.includes(entity)) throw new Error(`Unsupported entity: ${entity}`);
+
+          const rawColumns = payloadLine.slice(firstParen + 1, valuesPos).trim();
+          const rawValues = payloadLine.slice(valuesPos + valuesToken.length, lastParen).trim();
+
+          const columns = rawColumns.split(',').map((c) => c.trim());
+          const values = parseSqlValues(rawValues).map(parseSqlLiteral);
+          if (columns.length !== values.length) throw new Error('Invalid SQL import format');
+          const payload = Object.fromEntries(columns.map((col, index) => [col, values[index]]));
+          await this.models[entity].create(payload, { transaction: tx });
+          continue;
+        }
+
+        throw new Error('Only exported SQL format is supported for import');
+      }
+
+      await tx.commit();
+      return { success: true };
+    } catch (error) {
+      await tx.rollback();
+      throw error;
+    }
   }
 
   async importExcel(base64Content) {

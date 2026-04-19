@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS unit_info (
     unit_name           VARCHAR(255) NOT NULL DEFAULT 'TRUNG TÂM CÔNG NGHỆ XỬ LÝ BOM MÌN',
     technical_officer   VARCHAR(255) NOT NULL DEFAULT '',
     statistician        VARCHAR(255) NOT NULL DEFAULT ''
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 INSERT IGNORE INTO unit_info (id) VALUES (1);
 
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS overview (
     fire_system         VARCHAR(255) NOT NULL DEFAULT '',
     terrain_map         VARCHAR(255) NOT NULL DEFAULT '',
     land_certificate    VARCHAR(255) NOT NULL DEFAULT ''
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 INSERT IGNORE INTO overview (id) VALUES (1);
 

@@ -73,11 +73,10 @@ CREATE TABLE IF NOT EXISTS staff (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     full_name           TEXT    NOT NULL CHECK (length(trim(full_name)) > 0),
     date_of_birth       TEXT    DEFAULT '',
-    -- Note: date_of_birth <= current date is enforced at the application level
     id_number           TEXT    NOT NULL CHECK (length(trim(id_number)) > 0),
-    rank                TEXT    NOT NULL DEFAULT '' CHECK (
+    rank                TEXT    NOT NULL CHECK (
                             rank IN (
-                                '', 'Thiếu úy', 'Trung úy', 'Thượng uý', 'Đại úy',
+                                'Thiếu úy', 'Trung úy', 'Thượng uý', 'Đại úy',
                                 'Thiếu tá', 'Trung tá', 'Thượng tá', 'Đại tá',
                                 'Thiếu úy CN', 'Trung úy CN', 'Thượng uý CN',
                                 'Đại úy CN', 'Thiếu tá CN', 'Trung tá CN'
@@ -104,6 +103,26 @@ AFTER UPDATE ON staff
 FOR EACH ROW
 BEGIN
     UPDATE staff SET updated_at = datetime('now') WHERE id = OLD.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS staff_validate_dob_insert
+BEFORE INSERT ON staff
+FOR EACH ROW
+WHEN NEW.date_of_birth IS NOT NULL
+     AND NEW.date_of_birth <> ''
+     AND date(NEW.date_of_birth) > date('now')
+BEGIN
+    SELECT RAISE(ABORT, 'date_of_birth cannot be greater than current date');
+END;
+
+CREATE TRIGGER IF NOT EXISTS staff_validate_dob_update
+BEFORE UPDATE OF date_of_birth ON staff
+FOR EACH ROW
+WHEN NEW.date_of_birth IS NOT NULL
+     AND NEW.date_of_birth <> ''
+     AND date(NEW.date_of_birth) > date('now')
+BEGIN
+    SELECT RAISE(ABORT, 'date_of_birth cannot be greater than current date');
 END;
 
 CREATE INDEX IF NOT EXISTS idx_staff_full_name ON staff(full_name);
@@ -208,7 +227,7 @@ CREATE TABLE IF NOT EXISTS warehouse_access (
     warehouse_id        INTEGER NOT NULL,
     date                TEXT    NOT NULL DEFAULT '',
     visitor_name        TEXT    NOT NULL DEFAULT '',
-    companion_count     TEXT    NOT NULL DEFAULT '',
+    companion_count     INTEGER NOT NULL DEFAULT 0 CHECK (companion_count >= 0),
     unit                TEXT    NOT NULL DEFAULT '',
     responsible_person  TEXT    NOT NULL DEFAULT '',
     time_in             TEXT    NOT NULL DEFAULT '',
@@ -230,12 +249,12 @@ CREATE TABLE IF NOT EXISTS warehouse_handover (
     unit                TEXT    NOT NULL DEFAULT '',
     handover_date       TEXT    NOT NULL DEFAULT '',
     quality_level       TEXT    NOT NULL DEFAULT '',
-    quantity            TEXT    NOT NULL DEFAULT '',
+    quantity            INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
     giver               TEXT    NOT NULL DEFAULT '',
     receiver            TEXT    NOT NULL DEFAULT '',
     return_date         TEXT    NOT NULL DEFAULT '',
     return_quality      TEXT    NOT NULL DEFAULT '',
-    return_quantity     TEXT    NOT NULL DEFAULT '',
+    return_quantity     INTEGER NOT NULL DEFAULT 0 CHECK (return_quantity >= 0),
     return_giver        TEXT    NOT NULL DEFAULT '',
     return_receiver     TEXT    NOT NULL DEFAULT '',
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
@@ -255,10 +274,10 @@ CREATE TABLE IF NOT EXISTS warehouse_exports (
     reason              TEXT    NOT NULL DEFAULT '',
     item_name           TEXT    NOT NULL DEFAULT '',
     unit_measure        TEXT    NOT NULL DEFAULT '',
-    required_quantity   TEXT    NOT NULL DEFAULT '',
-    actual_quantity     TEXT    NOT NULL DEFAULT '',
-    unit_price          TEXT    NOT NULL DEFAULT '',
-    total_price         TEXT    NOT NULL DEFAULT '',
+    required_quantity   REAL    NOT NULL DEFAULT 0 CHECK (required_quantity >= 0),
+    actual_quantity     REAL    NOT NULL DEFAULT 0 CHECK (actual_quantity >= 0),
+    unit_price          REAL    NOT NULL DEFAULT 0 CHECK (unit_price >= 0),
+    total_price         REAL    NOT NULL DEFAULT 0 CHECK (total_price >= 0),
     notes               TEXT    NOT NULL DEFAULT '',
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
@@ -277,10 +296,10 @@ CREATE TABLE IF NOT EXISTS warehouse_imports (
     reason              TEXT    NOT NULL DEFAULT '',
     item_name           TEXT    NOT NULL DEFAULT '',
     unit_measure        TEXT    NOT NULL DEFAULT '',
-    required_quantity   TEXT    NOT NULL DEFAULT '',
-    actual_quantity     TEXT    NOT NULL DEFAULT '',
-    unit_price          TEXT    NOT NULL DEFAULT '',
-    total_price         TEXT    NOT NULL DEFAULT '',
+    required_quantity   REAL    NOT NULL DEFAULT 0 CHECK (required_quantity >= 0),
+    actual_quantity     REAL    NOT NULL DEFAULT 0 CHECK (actual_quantity >= 0),
+    unit_price          REAL    NOT NULL DEFAULT 0 CHECK (unit_price >= 0),
+    total_price         REAL    NOT NULL DEFAULT 0 CHECK (total_price >= 0),
     notes               TEXT    NOT NULL DEFAULT '',
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
@@ -320,7 +339,7 @@ CREATE INDEX IF NOT EXISTS idx_warehouse_lightning_warehouse_id ON warehouse_lig
 --   - name: NOT NULL (Không được để trống)
 --   - quantity: >= 0
 --   - year: Not greater than current year
---   - Total assignment <= quantity (recommended)
+--   - Unit/personal allocation are numbers and total <= quantity
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS weapons (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -330,11 +349,12 @@ CREATE TABLE IF NOT EXISTS weapons (
     quantity            INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
     country             TEXT    NOT NULL DEFAULT '',
     year                INTEGER DEFAULT NULL,
-    -- Note: year <= current year is enforced at the application level
-    assigned_unit       TEXT    NOT NULL DEFAULT '',
-    assigned_individual TEXT    NOT NULL DEFAULT '',
+    assigned_unit       INTEGER NOT NULL DEFAULT 0 CHECK (assigned_unit >= 0),
+    assigned_individual INTEGER NOT NULL DEFAULT 0 CHECK (assigned_individual >= 0),
     created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at          TEXT    NOT NULL DEFAULT (datetime('now'))
+    updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+    CHECK (year IS NULL OR year >= 1900),
+    CHECK (assigned_unit + assigned_individual <= quantity)
 );
 
 CREATE TRIGGER IF NOT EXISTS weapons_updated_at
@@ -342,6 +362,22 @@ AFTER UPDATE ON weapons
 FOR EACH ROW
 BEGIN
     UPDATE weapons SET updated_at = datetime('now') WHERE id = OLD.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS weapons_validate_year_insert
+BEFORE INSERT ON weapons
+FOR EACH ROW
+WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
+BEGIN
+    SELECT RAISE(ABORT, 'year cannot be greater than current year');
+END;
+
+CREATE TRIGGER IF NOT EXISTS weapons_validate_year_update
+BEFORE UPDATE OF year ON weapons
+FOR EACH ROW
+WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
+BEGIN
+    SELECT RAISE(ABORT, 'year cannot be greater than current year');
 END;
 
 CREATE INDEX IF NOT EXISTS idx_weapons_name ON weapons(name);
@@ -356,7 +392,7 @@ CREATE INDEX IF NOT EXISTS idx_weapons_classification ON weapons(classification)
 --   - quantity: >= 0
 --   - year: Not greater than current year
 --   - operating_hours: >= 0
---   - assignment <= quantity (recommended)
+--   - allocation (biên chế): Number
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS tech_equipment (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -366,15 +402,15 @@ CREATE TABLE IF NOT EXISTS tech_equipment (
     quantity            INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
     country             TEXT    NOT NULL DEFAULT '',
     year                INTEGER DEFAULT NULL,
-    -- Note: year <= current year is enforced at the application level
-    assigned_unit       TEXT    NOT NULL DEFAULT '',
-    assigned_individual TEXT    NOT NULL DEFAULT '',
+    allocation          INTEGER NOT NULL DEFAULT 0 CHECK (allocation >= 0),
     repair              TEXT    NOT NULL DEFAULT '' CHECK (
                             repair IN ('', 'Chưa sửa', 'Đang sửa', 'Đã sửa')
                         ),
     operating_hours     REAL    NOT NULL DEFAULT 0 CHECK (operating_hours >= 0),
     created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at          TEXT    NOT NULL DEFAULT (datetime('now'))
+    updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+    CHECK (year IS NULL OR year >= 1900),
+    CHECK (allocation <= quantity)
 );
 
 CREATE TRIGGER IF NOT EXISTS tech_equipment_updated_at
@@ -382,6 +418,22 @@ AFTER UPDATE ON tech_equipment
 FOR EACH ROW
 BEGIN
     UPDATE tech_equipment SET updated_at = datetime('now') WHERE id = OLD.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS tech_equipment_validate_year_insert
+BEFORE INSERT ON tech_equipment
+FOR EACH ROW
+WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
+BEGIN
+    SELECT RAISE(ABORT, 'year cannot be greater than current year');
+END;
+
+CREATE TRIGGER IF NOT EXISTS tech_equipment_validate_year_update
+BEFORE UPDATE OF year ON tech_equipment
+FOR EACH ROW
+WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
+BEGIN
+    SELECT RAISE(ABORT, 'year cannot be greater than current year');
 END;
 
 CREATE INDEX IF NOT EXISTS idx_tech_equipment_name ON tech_equipment(name);
@@ -396,7 +448,7 @@ CREATE INDEX IF NOT EXISTS idx_tech_equipment_classification ON tech_equipment(c
 --   - year: Not greater than current year
 --   - operating_hours: >= 0
 --   - km: >= 0
---   - assignment <= actual quantity (recommended)
+--   - allocation (biên chế): Number
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS vehicles (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -406,16 +458,15 @@ CREATE TABLE IF NOT EXISTS vehicles (
     vehicle_type        TEXT    NOT NULL DEFAULT '',
     country             TEXT    NOT NULL DEFAULT '',
     year                INTEGER DEFAULT NULL,
-    -- Note: year <= current year is enforced at the application level
-    assigned_unit       TEXT    NOT NULL DEFAULT '',
-    assigned_individual TEXT    NOT NULL DEFAULT '',
+    allocation          INTEGER NOT NULL DEFAULT 0 CHECK (allocation >= 0),
     repair              TEXT    NOT NULL DEFAULT '' CHECK (
                             repair IN ('', 'Chưa sửa', 'Đang sửa', 'Đã sửa')
                         ),
     operating_hours     REAL    NOT NULL DEFAULT 0 CHECK (operating_hours >= 0),
     km                  REAL    NOT NULL DEFAULT 0 CHECK (km >= 0),
     created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at          TEXT    NOT NULL DEFAULT (datetime('now'))
+    updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+    CHECK (year IS NULL OR year >= 1900)
 );
 
 CREATE TRIGGER IF NOT EXISTS vehicles_updated_at
@@ -423,6 +474,22 @@ AFTER UPDATE ON vehicles
 FOR EACH ROW
 BEGIN
     UPDATE vehicles SET updated_at = datetime('now') WHERE id = OLD.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS vehicles_validate_year_insert
+BEFORE INSERT ON vehicles
+FOR EACH ROW
+WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
+BEGIN
+    SELECT RAISE(ABORT, 'year cannot be greater than current year');
+END;
+
+CREATE TRIGGER IF NOT EXISTS vehicles_validate_year_update
+BEFORE UPDATE OF year ON vehicles
+FOR EACH ROW
+WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
+BEGIN
+    SELECT RAISE(ABORT, 'year cannot be greater than current year');
 END;
 
 CREATE INDEX IF NOT EXISTS idx_vehicles_name ON vehicles(name);
@@ -437,8 +504,7 @@ CREATE INDEX IF NOT EXISTS idx_vehicles_vehicle_type ON vehicles(vehicle_type);
 --   - name: NOT NULL (Không được để trống)
 --   - quantity: >= 0
 --   - year: Not greater than current year
---   - Unit/individual assignment >= 0
---   - Total assignment <= quantity (recommended)
+--   - Unit/personal allocation are numbers and total <= quantity
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS materials (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -448,11 +514,12 @@ CREATE TABLE IF NOT EXISTS materials (
     quantity            INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
     country             TEXT    NOT NULL DEFAULT '',
     year                INTEGER DEFAULT NULL,
-    -- Note: year <= current year is enforced at the application level
-    assigned_unit       TEXT    NOT NULL DEFAULT '',
-    assigned_individual TEXT    NOT NULL DEFAULT '',
+    assigned_unit       INTEGER NOT NULL DEFAULT 0 CHECK (assigned_unit >= 0),
+    assigned_individual INTEGER NOT NULL DEFAULT 0 CHECK (assigned_individual >= 0),
     created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
-    updated_at          TEXT    NOT NULL DEFAULT (datetime('now'))
+    updated_at          TEXT    NOT NULL DEFAULT (datetime('now')),
+    CHECK (year IS NULL OR year >= 1900),
+    CHECK (assigned_unit + assigned_individual <= quantity)
 );
 
 CREATE TRIGGER IF NOT EXISTS materials_updated_at
@@ -460,6 +527,22 @@ AFTER UPDATE ON materials
 FOR EACH ROW
 BEGIN
     UPDATE materials SET updated_at = datetime('now') WHERE id = OLD.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS materials_validate_year_insert
+BEFORE INSERT ON materials
+FOR EACH ROW
+WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
+BEGIN
+    SELECT RAISE(ABORT, 'year cannot be greater than current year');
+END;
+
+CREATE TRIGGER IF NOT EXISTS materials_validate_year_update
+BEFORE UPDATE OF year ON materials
+FOR EACH ROW
+WHEN NEW.year IS NOT NULL AND NEW.year > CAST(strftime('%Y', 'now') AS INTEGER)
+BEGIN
+    SELECT RAISE(ABORT, 'year cannot be greater than current year');
 END;
 
 CREATE INDEX IF NOT EXISTS idx_materials_name ON materials(name);
@@ -562,38 +645,38 @@ INSERT INTO warehouse_inspections (warehouse_id, date, inspector_name, inspector
 -- Sample Warehouse Access (Đăng ký ra vào kho)
 -- ============================================================================
 INSERT INTO warehouse_access (warehouse_id, date, visitor_name, companion_count, unit, responsible_person, time_in, time_out) VALUES
-    (1, '2025-03-10', 'Phạm Đức Anh', '2', 'Đội Dò tìm', 'Nguyễn Văn Hùng', '08:30', '10:15'),
-    (1, '2025-03-12', 'Đỗ Quang Hải', '0', 'Đội Dò tìm', 'Nguyễn Văn Hùng', '14:00', '15:30'),
-    (2, '2025-03-15', 'Lê Thị Hoa', '1', 'Đội Dò tìm', 'Trần Văn Minh', '09:00', '11:00'),
-    (3, '2025-04-01', 'Phạm Đức Anh', '3', 'Đội Dò tìm', 'Lê Thị Hoa', '07:30', '09:45'),
-    (4, '2025-04-05', 'Bùi Văn Nam', '1', 'Trạm xử lý', 'Hoàng Minh Tuấn', '13:00', '16:00');
+    (1, '2025-03-10', 'Phạm Đức Anh', 2, 'Đội Dò tìm', 'Nguyễn Văn Hùng', '08:30', '10:15'),
+    (1, '2025-03-12', 'Đỗ Quang Hải', 0, 'Đội Dò tìm', 'Nguyễn Văn Hùng', '14:00', '15:30'),
+    (2, '2025-03-15', 'Lê Thị Hoa', 1, 'Đội Dò tìm', 'Trần Văn Minh', '09:00', '11:00'),
+    (3, '2025-04-01', 'Phạm Đức Anh', 3, 'Đội Dò tìm', 'Lê Thị Hoa', '07:30', '09:45'),
+    (4, '2025-04-05', 'Bùi Văn Nam', 1, 'Trạm xử lý', 'Hoàng Minh Tuấn', '13:00', '16:00');
 
 -- ============================================================================
 -- Sample Warehouse Handover (Giao nhận tạm thời)
 -- ============================================================================
 INSERT INTO warehouse_handover (warehouse_id, equipment_name, unit, handover_date, quality_level, quantity, giver, receiver, return_date, return_quality, return_quantity, return_giver, return_receiver) VALUES
-    (1, 'Súng AK-47', 'Khẩu', '2025-02-01', 'Cấp 1', '5', 'Nguyễn Văn Hùng', 'Phạm Đức Anh', '2025-02-15', 'Cấp 1', '5', 'Phạm Đức Anh', 'Nguyễn Văn Hùng'),
-    (1, 'Đạn 7.62mm', 'Hộp', '2025-02-01', 'Cấp 1', '10', 'Nguyễn Văn Hùng', 'Phạm Đức Anh', '2025-02-15', 'Cấp 1', '8', 'Phạm Đức Anh', 'Nguyễn Văn Hùng'),
-    (3, 'Máy dò mìn AN-19/2', 'Bộ', '2025-03-01', 'Cấp 1', '2', 'Lê Thị Hoa', 'Đỗ Quang Hải', '', '', '', '', ''),
-    (4, 'Bộ dụng cụ sửa chữa', 'Bộ', '2025-03-10', 'Cấp 2', '3', 'Hoàng Minh Tuấn', 'Bùi Văn Nam', '2025-03-20', 'Cấp 2', '3', 'Bùi Văn Nam', 'Hoàng Minh Tuấn');
+    (1, 'Súng AK-47', 'Khẩu', '2025-02-01', 'Cấp 1', 5, 'Nguyễn Văn Hùng', 'Phạm Đức Anh', '2025-02-15', 'Cấp 1', 5, 'Phạm Đức Anh', 'Nguyễn Văn Hùng'),
+    (1, 'Đạn 7.62mm', 'Hộp', '2025-02-01', 'Cấp 1', 10, 'Nguyễn Văn Hùng', 'Phạm Đức Anh', '2025-02-15', 'Cấp 1', 8, 'Phạm Đức Anh', 'Nguyễn Văn Hùng'),
+    (3, 'Máy dò mìn AN-19/2', 'Bộ', '2025-03-01', 'Cấp 1', 2, 'Lê Thị Hoa', 'Đỗ Quang Hải', '', '', 0, '', ''),
+    (4, 'Bộ dụng cụ sửa chữa', 'Bộ', '2025-03-10', 'Cấp 2', 3, 'Hoàng Minh Tuấn', 'Bùi Văn Nam', '2025-03-20', 'Cấp 2', 3, 'Bùi Văn Nam', 'Hoàng Minh Tuấn');
 
 -- ============================================================================
 -- Sample Warehouse Exports (Xuất kho)
 -- ============================================================================
 INSERT INTO warehouse_exports (warehouse_id, receiver_name, receiver_unit, reason, item_name, unit_measure, required_quantity, actual_quantity, unit_price, total_price, notes) VALUES
-    (4, 'Phạm Đức Anh', 'Đội Dò tìm', 'Phục vụ nhiệm vụ rà phá bom mìn tại Quảng Trị', 'Pin lithium 3V', 'Viên', '50', '50', '25000', '1250000', 'Xuất theo lệnh số 015/KT'),
-    (4, 'Phạm Đức Anh', 'Đội Dò tìm', 'Phục vụ nhiệm vụ rà phá bom mìn tại Quảng Trị', 'Dây tín hiệu 5m', 'Cuộn', '10', '10', '150000', '1500000', 'Xuất theo lệnh số 015/KT'),
-    (1, 'Đỗ Quang Hải', 'Đội Dò tìm', 'Huấn luyện định kỳ Q1/2025', 'Đạn tập 7.62mm', 'Viên', '200', '200', '5000', '1000000', ''),
-    (4, 'Bùi Văn Nam', 'Trạm xử lý', 'Sửa chữa xe Toyota Land Cruiser', 'Dầu nhớt 5W-30', 'Lít', '20', '20', '180000', '3600000', '');
+    (4, 'Phạm Đức Anh', 'Đội Dò tìm', 'Phục vụ nhiệm vụ rà phá bom mìn tại Quảng Trị', 'Pin lithium 3V', 'Viên', 50, 50, 25000, 1250000, 'Xuất theo lệnh số 015/KT'),
+    (4, 'Phạm Đức Anh', 'Đội Dò tìm', 'Phục vụ nhiệm vụ rà phá bom mìn tại Quảng Trị', 'Dây tín hiệu 5m', 'Cuộn', 10, 10, 150000, 1500000, 'Xuất theo lệnh số 015/KT'),
+    (1, 'Đỗ Quang Hải', 'Đội Dò tìm', 'Huấn luyện định kỳ Q1/2025', 'Đạn tập 7.62mm', 'Viên', 200, 200, 5000, 1000000, ''),
+    (4, 'Bùi Văn Nam', 'Trạm xử lý', 'Sửa chữa xe Toyota Land Cruiser', 'Dầu nhớt 5W-30', 'Lít', 20, 20, 180000, 3600000, '');
 
 -- ============================================================================
 -- Sample Warehouse Imports (Nhập kho)
 -- ============================================================================
 INSERT INTO warehouse_imports (warehouse_id, sender_name, sender_unit, reason, item_name, unit_measure, required_quantity, actual_quantity, unit_price, total_price, notes) VALUES
-    (4, 'Công ty TNHH Vật Tư Quốc Phòng', 'Bên ngoài', 'Bổ sung vật tư tiêu hao Q1/2025', 'Pin lithium 3V', 'Viên', '200', '200', '25000', '5000000', 'Hóa đơn số HĐ-2025-0123'),
-    (4, 'Công ty TNHH Vật Tư Quốc Phòng', 'Bên ngoài', 'Bổ sung vật tư tiêu hao Q1/2025', 'Dây tín hiệu 5m', 'Cuộn', '50', '50', '150000', '7500000', 'Hóa đơn số HĐ-2025-0123'),
-    (1, 'Kho quân khu', 'Quân khu 4', 'Cấp phát đạn huấn luyện năm 2025', 'Đạn tập 7.62mm', 'Viên', '1000', '1000', '5000', '5000000', 'Phiếu xuất QK4-2025-045'),
-    (4, 'Đại lý Toyota Việt Nam', 'Bên ngoài', 'Mua phụ tùng bảo dưỡng xe', 'Lọc dầu Toyota', 'Cái', '10', '10', '350000', '3500000', '');
+    (4, 'Công ty TNHH Vật Tư Quốc Phòng', 'Bên ngoài', 'Bổ sung vật tư tiêu hao Q1/2025', 'Pin lithium 3V', 'Viên', 200, 200, 25000, 5000000, 'Hóa đơn số HĐ-2025-0123'),
+    (4, 'Công ty TNHH Vật Tư Quốc Phòng', 'Bên ngoài', 'Bổ sung vật tư tiêu hao Q1/2025', 'Dây tín hiệu 5m', 'Cuộn', 50, 50, 150000, 7500000, 'Hóa đơn số HĐ-2025-0123'),
+    (1, 'Kho quân khu', 'Quân khu 4', 'Cấp phát đạn huấn luyện năm 2025', 'Đạn tập 7.62mm', 'Viên', 1000, 1000, 5000, 5000000, 'Phiếu xuất QK4-2025-045'),
+    (4, 'Đại lý Toyota Việt Nam', 'Bên ngoài', 'Mua phụ tùng bảo dưỡng xe', 'Lọc dầu Toyota', 'Cái', 10, 10, 350000, 3500000, '');
 
 -- ============================================================================
 -- Sample Warehouse Lightning (Đo chống sét)
@@ -609,48 +692,48 @@ INSERT INTO warehouse_lightning (warehouse_id, date, weather, direct_rod1_rdo, d
 -- Sample Weapons (Vũ khí trang bị)
 -- ============================================================================
 INSERT INTO weapons (name, classification, unit_measure, quantity, country, year, assigned_unit, assigned_individual) VALUES
-    ('Súng trường tấn công AK-47', 'Cấp 1', 'Khẩu', 25, 'Nga', 1990, '15', '10'),
-    ('Súng ngắn K54', 'Cấp 1', 'Khẩu', 10, 'Trung Quốc', 1995, '5', '5'),
-    ('Súng trường M16A2', 'Cấp 1', 'Khẩu', 8, 'Mỹ', 2000, '5', '3'),
-    ('Ống nhòm quân sự 8x42', 'Cấp 2', 'Chiếc', 15, 'Đức', 2018, '10', '5'),
-    ('Áo giáp chống đạn Level III', 'Cấp 1', 'Bộ', 30, 'Việt Nam', 2020, '20', '10'),
-    ('Mũ chống đạn', 'Cấp 2', 'Chiếc', 40, 'Việt Nam', 2021, '30', '10'),
-    ('Dao đa năng quân dụng', 'Cấp 3', 'Chiếc', 50, 'Việt Nam', 2022, '30', '20');
+    ('Súng trường tấn công AK-47', 'Cấp 1', 'Khẩu', 25, 'Nga', 1990, 15, 10),
+    ('Súng ngắn K54', 'Cấp 1', 'Khẩu', 10, 'Trung Quốc', 1995, 5, 5),
+    ('Súng trường M16A2', 'Cấp 1', 'Khẩu', 8, 'Mỹ', 2000, 5, 3),
+    ('Ống nhòm quân sự 8x42', 'Cấp 2', 'Chiếc', 15, 'Đức', 2018, 10, 5),
+    ('Áo giáp chống đạn Level III', 'Cấp 1', 'Bộ', 30, 'Việt Nam', 2020, 20, 10),
+    ('Mũ chống đạn', 'Cấp 2', 'Chiếc', 40, 'Việt Nam', 2021, 30, 10),
+    ('Dao đa năng quân dụng', 'Cấp 3', 'Chiếc', 50, 'Việt Nam', 2022, 30, 20);
 
 -- ============================================================================
 -- Sample Tech Equipment (Trang thiết bị kỹ thuật)
 -- ============================================================================
-INSERT INTO tech_equipment (name, classification, unit_measure, quantity, country, year, assigned_unit, assigned_individual, repair, operating_hours) VALUES
-    ('Máy dò mìn AN-19/2', 'Cấp 1', 'Bộ', 5, 'Nga', 2015, '3', '2', '', 1250.5),
-    ('Máy rà phá bom mìn cầm tay CEIA MIL-D1', 'Cấp 1', 'Bộ', 3, 'Ý', 2019, '2', '1', '', 890.0),
-    ('Thiết bị đo từ trường Geometrics G-858', 'Cấp 1', 'Bộ', 2, 'Mỹ', 2020, '1', '1', 'Đang sửa', 450.0),
-    ('Thiết bị GPS cầm tay Garmin 66sr', 'Cấp 2', 'Chiếc', 10, 'Mỹ', 2022, '8', '2', '', 2100.0),
-    ('Máy phát điện Honda EU22i', 'Cấp 2', 'Chiếc', 4, 'Nhật Bản', 2021, '3', '1', '', 3500.0),
-    ('Thiết bị kiểm định chất lượng QC-100', 'Cấp 2', 'Bộ', 2, 'Hàn Quốc', 2023, '2', '0', '', 120.0),
-    ('Máy bơm nước Pentax', 'Cấp 3', 'Chiếc', 3, 'Ý', 2018, '2', '1', 'Đã sửa', 5200.0);
+INSERT INTO tech_equipment (name, classification, unit_measure, quantity, country, year, allocation, repair, operating_hours) VALUES
+    ('Máy dò mìn AN-19/2', 'Cấp 1', 'Bộ', 5, 'Nga', 2015, 5, '', 1250.5),
+    ('Máy rà phá bom mìn cầm tay CEIA MIL-D1', 'Cấp 1', 'Bộ', 3, 'Ý', 2019, 3, '', 890.0),
+    ('Thiết bị đo từ trường Geometrics G-858', 'Cấp 1', 'Bộ', 2, 'Mỹ', 2020, 2, 'Đang sửa', 450.0),
+    ('Thiết bị GPS cầm tay Garmin 66sr', 'Cấp 2', 'Chiếc', 10, 'Mỹ', 2022, 10, '', 2100.0),
+    ('Máy phát điện Honda EU22i', 'Cấp 2', 'Chiếc', 4, 'Nhật Bản', 2021, 4, '', 3500.0),
+    ('Thiết bị kiểm định chất lượng QC-100', 'Cấp 2', 'Bộ', 2, 'Hàn Quốc', 2023, 2, '', 120.0),
+    ('Máy bơm nước Pentax', 'Cấp 3', 'Chiếc', 3, 'Ý', 2018, 3, 'Đã sửa', 5200.0);
 
 -- ============================================================================
 -- Sample Vehicles (Phương tiện)
 -- ============================================================================
-INSERT INTO vehicles (name, classification, brand, vehicle_type, country, year, assigned_unit, assigned_individual, repair, operating_hours, km) VALUES
-    ('Toyota Land Cruiser 76', 'Cấp 1', 'Toyota', 'Ô tô', 'Nhật Bản', 2018, '1', '0', '', 2500.0, 45000.0),
-    ('Hyundai HD72 tải nhẹ', 'Cấp 2', 'Hyundai', 'Xe tải', 'Hàn Quốc', 2019, '1', '0', '', 3200.0, 62000.0),
-    ('Isuzu NQR75LE', 'Cấp 2', 'Isuzu', 'Xe tải', 'Nhật Bản', 2017, '1', '0', 'Đang sửa', 4100.0, 78000.0),
-    ('Toyota Hilux 2.4L', 'Cấp 1', 'Toyota', 'Ô tô', 'Thái Lan', 2021, '1', '0', '', 1800.0, 32000.0),
-    ('Xe cần cẩu Tadano TM-ZE364MH', 'Cấp 1', 'Tadano', 'Xe chuyên dụng', 'Nhật Bản', 2016, '1', '0', '', 1500.0, 25000.0),
-    ('Xe máy Honda Wave RSX', 'Cấp 3', 'Honda', 'Xe máy', 'Việt Nam', 2022, '0', '3', '', 800.0, 15000.0);
+INSERT INTO vehicles (name, classification, brand, vehicle_type, country, year, allocation, repair, operating_hours, km) VALUES
+    ('Toyota Land Cruiser 76', 'Cấp 1', 'Toyota', 'Ô tô', 'Nhật Bản', 2018, 1, '', 2500.0, 45000.0),
+    ('Hyundai HD72 tải nhẹ', 'Cấp 2', 'Hyundai', 'Xe tải', 'Hàn Quốc', 2019, 1, '', 3200.0, 62000.0),
+    ('Isuzu NQR75LE', 'Cấp 2', 'Isuzu', 'Xe tải', 'Nhật Bản', 2017, 1, 'Đang sửa', 4100.0, 78000.0),
+    ('Toyota Hilux 2.4L', 'Cấp 1', 'Toyota', 'Ô tô', 'Thái Lan', 2021, 1, '', 1800.0, 32000.0),
+    ('Xe cần cẩu Tadano TM-ZE364MH', 'Cấp 1', 'Tadano', 'Xe chuyên dụng', 'Nhật Bản', 2016, 1, '', 1500.0, 25000.0),
+    ('Xe máy Honda Wave RSX', 'Cấp 3', 'Honda', 'Xe máy', 'Việt Nam', 2022, 3, '', 800.0, 15000.0);
 
 -- ============================================================================
 -- Sample Materials (Vật tư)
 -- ============================================================================
 INSERT INTO materials (name, classification, unit_measure, quantity, country, year, assigned_unit, assigned_individual) VALUES
-    ('Pin lithium CR123A 3V', 'Cấp 2', 'Viên', 500, 'Nhật Bản', 2024, '400', '100'),
-    ('Dây tín hiệu đồng trục 5m', 'Cấp 2', 'Cuộn', 100, 'Việt Nam', 2024, '80', '20'),
-    ('Dầu nhớt tổng hợp 5W-30', 'Cấp 3', 'Lít', 200, 'Nhật Bản', 2024, '200', '0'),
-    ('Lọc dầu Toyota chính hãng', 'Cấp 3', 'Cái', 30, 'Nhật Bản', 2024, '30', '0'),
-    ('Găng tay chống cắt Level 5', 'Cấp 2', 'Đôi', 100, 'Việt Nam', 2023, '70', '30'),
-    ('Kính bảo hộ chống UV', 'Cấp 3', 'Chiếc', 50, 'Việt Nam', 2023, '35', '15'),
-    ('Bộ dụng cụ sửa chữa đa năng', 'Cấp 2', 'Bộ', 20, 'Đức', 2022, '15', '5'),
-    ('Băng keo cách điện 3M', 'Cấp 3', 'Cuộn', 200, 'Mỹ', 2024, '150', '50'),
-    ('Dây thép gai D14', 'Cấp 3', 'Cuộn', 50, 'Việt Nam', 2023, '50', '0'),
-    ('Sơn chống rỉ Jotun', 'Cấp 3', 'Lít', 100, 'Na Uy', 2024, '100', '0');
+    ('Pin lithium CR123A 3V', 'Cấp 2', 'Viên', 500, 'Nhật Bản', 2024, 400, 100),
+    ('Dây tín hiệu đồng trục 5m', 'Cấp 2', 'Cuộn', 100, 'Việt Nam', 2024, 80, 20),
+    ('Dầu nhớt tổng hợp 5W-30', 'Cấp 3', 'Lít', 200, 'Nhật Bản', 2024, 200, 0),
+    ('Lọc dầu Toyota chính hãng', 'Cấp 3', 'Cái', 30, 'Nhật Bản', 2024, 30, 0),
+    ('Găng tay chống cắt Level 5', 'Cấp 2', 'Đôi', 100, 'Việt Nam', 2023, 70, 30),
+    ('Kính bảo hộ chống UV', 'Cấp 3', 'Chiếc', 50, 'Việt Nam', 2023, 35, 15),
+    ('Bộ dụng cụ sửa chữa đa năng', 'Cấp 2', 'Bộ', 20, 'Đức', 2022, 15, 5),
+    ('Băng keo cách điện 3M', 'Cấp 3', 'Cuộn', 200, 'Mỹ', 2024, 150, 50),
+    ('Dây thép gai D14', 'Cấp 3', 'Cuộn', 50, 'Việt Nam', 2023, 50, 0),
+    ('Sơn chống rỉ Jotun', 'Cấp 3', 'Lít', 100, 'Na Uy', 2024, 100, 0);

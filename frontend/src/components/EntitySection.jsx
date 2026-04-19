@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Api } from '../services/api';
+import TableForm from './TableForm';
 
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -14,11 +15,11 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [draft, setDraft] = useState('{}');
   const [showCreate, setShowCreate] = useState(false);
+  const [editingRow, setEditingRow] = useState(null); // row being edited (inline)
   const [loadKey, setLoadKey] = useState(0);
 
-  const loadRows = async () => {
+  const loadRows = () => {
     setLoadKey((k) => k + 1);
   };
 
@@ -30,6 +31,7 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
           setRows(data.rows || []);
           setError('');
           setShowCreate(false);
+          setEditingRow(null);
         }
       })
       .catch((e) => {
@@ -43,11 +45,9 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
     };
   }, [entity, credential, loadKey]);
 
-  const createRow = async () => {
+  const createRow = async (payload) => {
     try {
-      const payload = JSON.parse(draft);
       await Api.createEntity(entity, payload, credential);
-      setDraft('{}');
       setShowCreate(false);
       loadRows();
     } catch (e) {
@@ -55,13 +55,11 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
     }
   };
 
-  const updateRow = async (row) => {
-    const input = prompt('Edit JSON row', JSON.stringify(row, null, 2));
-    if (!input) return;
+  const updateRow = async (payload) => {
+    if (!editingRow) return;
     try {
-      const payload = JSON.parse(input);
-      delete payload.id;
-      await Api.updateEntity(entity, row.id, payload, credential);
+      await Api.updateEntity(entity, editingRow.id, payload, credential);
+      setEditingRow(null);
       loadRows();
     } catch (e) {
       setError(e.message);
@@ -98,7 +96,10 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
             <button className="btn btn-sm btn-outline" onClick={exportExcel}>📊 Xuất Excel</button>
             <button className="btn btn-sm btn-outline" onClick={loadRows}>↻ Làm mới</button>
             {canEdit && (
-              <button className="btn btn-sm btn-primary" onClick={() => setShowCreate(!showCreate)}>
+              <button
+                className="btn btn-sm btn-primary"
+                onClick={() => { setShowCreate(!showCreate); setEditingRow(null); }}
+              >
                 {showCreate ? '✕ Đóng' : '+ Thêm mới'}
               </button>
             )}
@@ -107,17 +108,33 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
 
         {error && <div className="error-msg" style={{ margin: '0.75rem 1.25rem 0' }}>{error}</div>}
 
+        {/* --- CREATE FORM --- */}
         {canEdit && showCreate && (
-          <div className="json-editor" style={{ margin: '1rem 1.25rem 0' }}>
-            <label>Nhập dữ liệu JSON:</label>
-            <textarea className="form-textarea" value={draft} onChange={(e) => setDraft(e.target.value)} rows={6} />
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button className="btn btn-sm btn-success" onClick={createRow}>Tạo mới</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => setShowCreate(false)}>Hủy</button>
-            </div>
+          <div className="inline-form-wrap">
+            <TableForm
+              entity={entity}
+              onSubmit={createRow}
+              onCancel={() => setShowCreate(false)}
+              submitLabel="Tạo mới"
+            />
           </div>
         )}
 
+        {/* --- EDIT FORM (inline, below header) --- */}
+        {canEdit && editingRow && !showCreate && (
+          <div className="inline-form-wrap">
+            <div className="inline-form-title">Sửa dòng #{editingRow.id}</div>
+            <TableForm
+              entity={entity}
+              initialData={editingRow}
+              onSubmit={updateRow}
+              onCancel={() => setEditingRow(null)}
+              submitLabel="Cập nhật"
+            />
+          </div>
+        )}
+
+        {/* --- DATA TABLE --- */}
         {loading ? (
           <div className="loading-bar">Đang tải dữ liệu...</div>
         ) : rows.length === 0 ? (
@@ -134,12 +151,20 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
                 </thead>
                 <tbody>
                   {rows.map((row) => (
-                    <tr key={row.id ?? JSON.stringify(row)}>
+                    <tr
+                      key={row.id ?? JSON.stringify(row)}
+                      className={editingRow?.id === row.id ? 'row-editing' : ''}
+                    >
                       {columns.map((c) => <td key={c}>{String(row[c] ?? '')}</td>)}
                       {canEdit && (
                         <td>
                           <div className="td-actions">
-                            <button className="btn btn-sm btn-outline" onClick={() => updateRow(row)}>Sửa</button>
+                            <button
+                              className="btn btn-sm btn-outline"
+                              onClick={() => { setEditingRow(row); setShowCreate(false); }}
+                            >
+                              Sửa
+                            </button>
                             <button className="btn btn-sm btn-danger" onClick={() => deleteRow(row.id)}>Xóa</button>
                           </div>
                         </td>

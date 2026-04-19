@@ -449,6 +449,8 @@ CREATE INDEX IF NOT EXISTS idx_tech_equipment_classification ON tech_equipment(c
 --   - operating_hours: >= 0
 --   - km: >= 0
 --   - allocation (biên chế): Number
+--   - Document does not define a vehicle quantity field, so allocation has
+--     non-negative validation only (no allocation<=quantity check)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS vehicles (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,

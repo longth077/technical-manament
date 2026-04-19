@@ -29,7 +29,7 @@ export default function AdminDataTransfer({ credential }) {
     try {
       const sql = await Api.exportAllSql(credential);
       downloadText(sql, 'technical-management.sql');
-      setMessage('SQL export completed');
+      setMessage('Xuất SQL thành công');
     } catch (e) {
       setMessage(e.message);
     }
@@ -39,7 +39,7 @@ export default function AdminDataTransfer({ credential }) {
     try {
       const blob = await Api.exportAllExcel(credential);
       downloadBlob(blob, 'technical-management.xlsx');
-      setMessage('Excel export completed');
+      setMessage('Xuất Excel thành công');
     } catch (e) {
       setMessage(e.message);
     }
@@ -48,7 +48,8 @@ export default function AdminDataTransfer({ credential }) {
   const importSql = async () => {
     try {
       await Api.importSql(sqlInput, credential);
-      setMessage('SQL imported');
+      setMessage('Nhập SQL thành công');
+      setSqlInput('');
     } catch (e) {
       setMessage(e.message);
     }
@@ -57,26 +58,61 @@ export default function AdminDataTransfer({ credential }) {
   const importExcel = async () => {
     try {
       await Api.importExcel(excelBase64, credential);
-      setMessage('Excel imported');
+      setMessage('Nhập Excel thành công');
+      setExcelBase64('');
     } catch (e) {
       setMessage(e.message);
     }
   };
 
   return (
-    <section>
-      <h3>Admin import/export</h3>
-      <p>{message}</p>
-      <button onClick={exportSql}>Export all SQL</button>
-      <button onClick={exportExcel} style={{ marginLeft: 8 }}>Export all Excel</button>
+    <section className="admin-section">
+      <div className="panel">
+        <div className="panel-header">
+          <h3>📦 Nhập / Xuất dữ liệu</h3>
+        </div>
+        <div className="panel-body">
+          {message && <div className="status-msg">{message}</div>}
 
-      <p>Import SQL</p>
-      <textarea rows={8} value={sqlInput} onChange={(e) => setSqlInput(e.target.value)} />
-      <button onClick={importSql}>Import SQL</button>
+          {/* Export Section */}
+          <div className="transfer-grid">
+            <div className="transfer-card">
+              <h4>📤 Xuất toàn bộ dữ liệu</h4>
+              <p>Tải toàn bộ dữ liệu hệ thống dưới dạng SQL hoặc Excel.</p>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn btn-primary" onClick={exportSql}>Xuất SQL</button>
+                <button className="btn btn-success" onClick={exportExcel}>Xuất Excel</button>
+              </div>
+            </div>
 
-      <p>Import Excel (base64)</p>
-      <textarea rows={6} value={excelBase64} onChange={(e) => setExcelBase64(e.target.value)} />
-      <button onClick={importExcel}>Import Excel</button>
+            <div className="transfer-card">
+              <h4>📥 Nhập dữ liệu SQL</h4>
+              <p>Dán nội dung SQL đã xuất vào ô bên dưới.</p>
+              <textarea
+                className="form-textarea"
+                rows={5}
+                value={sqlInput}
+                onChange={(e) => setSqlInput(e.target.value)}
+                placeholder="Dán nội dung SQL ở đây..."
+              />
+              <button className="btn btn-primary btn-sm" onClick={importSql} disabled={!sqlInput.trim()}>Nhập SQL</button>
+            </div>
+          </div>
+
+          <div className="transfer-card" style={{ marginTop: '1.25rem' }}>
+            <h4>📥 Nhập dữ liệu Excel (base64)</h4>
+            <p>Dán nội dung Excel đã mã hóa base64 vào ô bên dưới.</p>
+            <textarea
+              className="form-textarea"
+              rows={4}
+              value={excelBase64}
+              onChange={(e) => setExcelBase64(e.target.value)}
+              placeholder="Dán nội dung base64 ở đây..."
+            />
+            <button className="btn btn-primary btn-sm" onClick={importExcel} disabled={!excelBase64.trim()}>Nhập Excel</button>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

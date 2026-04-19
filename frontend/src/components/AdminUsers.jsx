@@ -52,7 +52,7 @@ export default function AdminUsers({ credential }) {
   };
 
   const remove = async (id) => {
-    if (!confirm('Delete user?')) return;
+    if (!confirm('Bạn có chắc muốn xóa tài khoản này?')) return;
     try {
       await Api.deleteUser(id, credential);
       await load();
@@ -62,34 +62,90 @@ export default function AdminUsers({ credential }) {
   };
 
   return (
-    <section>
-      <h3>Admin user management</h3>
-      {error && <p className="error">{error}</p>}
-      <h4>Pending approvals</h4>
-      <ul>
-        {pending.map((u) => (
-          <li key={u.id}>{u.username} ({u.email}) <button onClick={() => approve(u.id)}>Approve</button></li>
-        ))}
-      </ul>
-      <h4>All users</h4>
-      <table>
-        <thead><tr><th>username</th><th>email</th><th>role</th><th>status</th><th>actions</th></tr></thead>
-        <tbody>
-          {users.map((u) => (
-            <tr key={u.id}>
-              <td>{u.username}</td><td>{u.email}</td><td>{u.role}</td><td>{u.status}</td>
-              <td>
-                <select defaultValue={u.role} onChange={(e) => setRole(u.id, e.target.value)}>
-                  <option value="admin">admin</option>
-                  <option value="user">user</option>
-                  <option value="readonly">readonly</option>
-                </select>
-                <button onClick={() => remove(u.id)} style={{ marginLeft: 8 }}>Delete</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <section className="admin-section">
+      {error && <div className="error-msg">{error}</div>}
+
+      {/* Pending Approvals */}
+      <div className="panel">
+        <div className="panel-header">
+          <h3>⏳ Chờ duyệt ({pending.length})</h3>
+          <button className="btn btn-sm btn-outline" onClick={load}>↻ Làm mới</button>
+        </div>
+        {pending.length === 0 ? (
+          <div className="empty-state">Không có tài khoản nào chờ duyệt</div>
+        ) : (
+          <ul className="pending-list">
+            {pending.map((u) => (
+              <li key={u.id} className="pending-item">
+                <div className="pending-info">
+                  <span className="name">{u.username}</span>
+                  <span className="email">{u.email}</span>
+                </div>
+                <button className="btn btn-sm btn-success" onClick={() => approve(u.id)}>✓ Duyệt</button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* All Users Table */}
+      <div className="panel">
+        <div className="panel-header">
+          <h3>👥 Tất cả tài khoản ({users.length})</h3>
+        </div>
+        {users.length === 0 ? (
+          <div className="empty-state">Chưa có tài khoản nào</div>
+        ) : (
+          <div className="panel-body-flush">
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Tên đăng nhập</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id}>
+                      <td style={{ fontWeight: 600 }}>{u.username}</td>
+                      <td>{u.email}</td>
+                      <td>
+                        <span className={`badge ${u.role === 'admin' ? 'badge-info' : u.role === 'user' ? 'badge-success' : 'badge-warning'}`}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge ${u.status === 'approved' ? 'badge-success' : 'badge-warning'}`}>
+                          {u.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="td-actions">
+                          <select
+                            className="form-select"
+                            defaultValue={u.role}
+                            onChange={(e) => setRole(u.id, e.target.value)}
+                            style={{ width: 'auto', padding: '0.3rem 0.5rem', fontSize: '0.78rem' }}
+                          >
+                            <option value="admin">admin</option>
+                            <option value="user">user</option>
+                            <option value="readonly">readonly</option>
+                          </select>
+                          <button className="btn btn-sm btn-danger" onClick={() => remove(u.id)}>Xóa</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

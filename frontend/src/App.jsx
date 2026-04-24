@@ -1,91 +1,89 @@
 import { useEffect, useMemo, useState } from 'react';
 import EntitySection from './components/EntitySection';
-import AdminUsers from './components/AdminUsers';
 import AdminDataTransfer from './components/AdminDataTransfer';
+import HomePage from './components/HomePage';
+import AccountPanel from './components/AccountPanel';
 import { Api } from './services/api';
+import { ENTITY_LABELS, ENTITY_ICONS } from './services/entityConfig';
 import './App.css';
-
-const ENTITY_LABELS = {
-  unit_info: 'Đơn vị',
-  overview: 'Tổng quan',
-  staff: 'Cán bộ',
-  warehouses: 'Kho trạm xưởng',
-  warehouse_images: 'Ảnh kho',
-  warehouse_equipment: 'Trang bị kho',
-  warehouse_inspections: 'Kiểm tra kho',
-  warehouse_access: 'Ra vào kho',
-  warehouse_handover: 'Giao nhận',
-  warehouse_exports: 'Xuất kho',
-  warehouse_imports: 'Nhập kho',
-  warehouse_lightning: 'Chống sét',
-  weapons: 'Vũ khí',
-  tech_equipment: 'Thiết bị KT',
-  vehicles: 'Phương tiện',
-  materials: 'Vật tư',
-};
 
 const entities = Object.keys(ENTITY_LABELS);
 
+/* Session duration: 8 hours */
+const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
+
 function App() {
-  const [usernameOrEmail, setUsernameOrEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  /* ── Auth state ── */
+  const [authView, setAuthView] = useState('login'); // 'login' | 'signup'
+  const [loginId, setLoginId] = useState('');
+  const [loginPw, setLoginPw] = useState('');
+  const [signupFullName, setSignupFullName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupUsername, setSignupUsername] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [authMessage, setAuthMessage] = useState({ text: '', success: false });
+
+  /* ── App state ── */
   const [credential, setCredential] = useState(localStorage.getItem('credential') || '');
   const [user, setUser] = useState(null);
-  const [activeEntity, setActiveEntity] = useState('staff');
-  const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('data');
+  const [activeView, setActiveView] = useState('home'); // 'home' | entity key | 'transfer'
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [accountPanelOpen, setAccountPanelOpen] = useState(false);
+  const [sessionMsg, setSessionMsg] = useState('');
 
   const canEdit = useMemo(() => user && user.role !== 'readonly', [user]);
 
+  /* ── Sign in ── */
   const signIn = async () => {
-    if (!usernameOrEmail || !password) {
-      setMessage('Username/email and password are required');
+    if (!loginId || !loginPw) {
+      setAuthMessage({ text: 'Vui lòng nhập tên đăng nhập/email và mật khẩu', success: false });
       return;
     }
-    const encoded = btoa(`${usernameOrEmail}:${password}`);
+    const encoded = btoa(`${loginId}:${loginPw}`);
     try {
       const data = await Api.me(encoded);
       setCredential(encoded);
       localStorage.setItem('credential', encoded);
+      localStorage.setItem('loginTime', Date.now().toString());
       setUser(data.user);
-      setMessage('');
+      setAuthMessage({ text: '', success: false });
+      setSessionMsg('');
     } catch (e) {
-      setMessage(e.message);
+      setAuthMessage({ text: e.message, success: false });
     }
   };
 
-  const signOut = () => {
+  /* ── Sign out ── */
+  const signOut = (msg = '') => {
     localStorage.removeItem('credential');
+    localStorage.removeItem('loginTime');
     setCredential('');
     setUser(null);
-    setMessage('');
+    setActiveView('home');
+    setAccountPanelOpen(false);
+    setSessionMsg(msg);
   };
 
+  /* ── Sign up ── */
   const signup = async () => {
-    if (!signupUsername || !signupEmail || !signupPassword || !fullName) {
-      setMessage('All signup fields are required');
+    if (!signupUsername || !signupEmail || !signupPassword || !signupFullName) {
+      setAuthMessage({ text: 'Vui lòng điền đầy đủ tất cả các trường', success: false });
       return;
     }
     if (signupPassword.length < 8) {
-      setMessage('Password must be at least 8 characters');
+      setAuthMessage({ text: 'Mật khẩu phải có ít nhất 8 ký tự', success: false });
       return;
     }
     try {
-      await Api.signup({ username: signupUsername, email: signupEmail, password: signupPassword, fullName });
-      setMessage('Signup created, waiting admin approval');
+      await Api.signup({ username: signupUsername, email: signupEmail, password: signupPassword, fullName: signupFullName });
+      setAuthMessage({ text: 'Đăng ký thành công! Vui lòng chờ quản trị viên duyệt tài khoản.', success: true });
+      setSignupFullName(''); setSignupEmail(''); setSignupUsername(''); setSignupPassword('');
     } catch (e) {
-      setMessage(e.message);
+      setAuthMessage({ text: e.message, success: false });
     }
   };
 
-  const handleSignInKey = (e) => {
-    if (e.key === 'Enter') signIn();
-  };
-
+  /* ── Session restore on mount ── */
   useEffect(() => {
     if (!credential) return;
     let active = true;
@@ -95,69 +93,121 @@ function App() {
       })
       .catch(() => {
         if (!active) return;
-        localStorage.removeItem('credential');
-        setCredential('');
-        setUser(null);
+        signOut();
       });
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [credential]);
 
-  /* ---------- Auth Page ---------- */
+  /* ── Session timeout: check every minute ── */
+  useEffect(() => {
+    if (!credential) return;
+    const check = () => {
+      const loginTime = localStorage.getItem('loginTime');
+      if (loginTime && Date.now() - parseInt(loginTime, 10) > SESSION_DURATION_MS) {
+        signOut('Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.');
+      }
+    };
+    check();
+    const id = setInterval(check, 60_000);
+    return () => clearInterval(id);
+  }, [credential]);
+
+  /* ── Auth pages ── */
   if (!user) {
     return (
       <div className="auth-page">
         <div className="auth-container">
           <div className="auth-brand">
-            <h1>⚙ Quản Lý Kỹ Thuật</h1>
-            <p>Technical Management System</p>
+            <div className="auth-brand-icon">⚙</div>
+            <h1>Quản Lý Kỹ Thuật</h1>
+            <p>Hệ thống Quản lý Kỹ thuật</p>
           </div>
 
-          <div className="auth-card">
-            <h3>Đăng nhập</h3>
-            <div className="form-group">
-              <input
-                className="form-input"
-                placeholder="Tên đăng nhập hoặc email"
-                value={usernameOrEmail}
-                onChange={(e) => setUsernameOrEmail(e.target.value)}
-                onKeyDown={handleSignInKey}
-              />
-            </div>
-            <div className="form-group">
-              <input
-                className="form-input"
-                type="password"
-                placeholder="Mật khẩu"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={handleSignInKey}
-              />
-            </div>
-            <button className="btn btn-primary btn-full" onClick={signIn}>Đăng nhập</button>
-          </div>
+          {sessionMsg && (
+            <div className="auth-message error">{sessionMsg}</div>
+          )}
 
-          <div className="auth-card">
-            <h3>Đăng ký tài khoản</h3>
-            <div className="form-group">
-              <input className="form-input" placeholder="Họ và tên" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          {authView === 'login' ? (
+            /* ── Login form ── */
+            <div className="auth-card">
+              <h3>Đăng nhập</h3>
+              <div className="form-group">
+                <label className="form-label">Tên đăng nhập hoặc Email</label>
+                <input
+                  className="form-input"
+                  placeholder="Nhập tên đăng nhập hoặc email"
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && signIn()}
+                  autoFocus
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Mật khẩu</label>
+                <input
+                  className="form-input"
+                  type="password"
+                  placeholder="Nhập mật khẩu"
+                  value={loginPw}
+                  onChange={(e) => setLoginPw(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && signIn()}
+                />
+              </div>
+              {authMessage.text && (
+                <div className={`auth-message ${authMessage.success ? 'success' : 'error'}`}>
+                  {authMessage.text}
+                </div>
+              )}
+              <button className="btn btn-primary btn-full" onClick={signIn}>
+                Đăng nhập
+              </button>
+              <div className="auth-switch">
+                Chưa có tài khoản?&nbsp;
+                <button
+                  className="auth-link"
+                  onClick={() => { setAuthView('signup'); setAuthMessage({ text: '', success: false }); }}
+                >
+                  Đăng ký ngay
+                </button>
+              </div>
             </div>
-            <div className="form-group">
-              <input className="form-input" placeholder="Tên đăng nhập" value={signupUsername} onChange={(e) => setSignupUsername(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <input className="form-input" placeholder="Email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <input className="form-input" type="password" placeholder="Mật khẩu (≥ 8 ký tự)" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} />
-            </div>
-            <button className="btn btn-outline btn-full" onClick={signup}>Đăng ký</button>
-          </div>
-
-          {message && (
-            <div className={`auth-message ${message.toLowerCase().includes('waiting') || message.toLowerCase().includes('created') ? 'success' : 'error'}`}>
-              {message}
+          ) : (
+            /* ── Signup form ── */
+            <div className="auth-card">
+              <h3>Đăng ký tài khoản</h3>
+              <div className="form-group">
+                <label className="form-label">Họ và tên</label>
+                <input className="form-input" placeholder="Nhập họ và tên" value={signupFullName} onChange={(e) => setSignupFullName(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Tên đăng nhập</label>
+                <input className="form-input" placeholder="Chọn tên đăng nhập" value={signupUsername} onChange={(e) => setSignupUsername(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input className="form-input" type="email" placeholder="Nhập email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Mật khẩu (ít nhất 8 ký tự)</label>
+                <input className="form-input" type="password" placeholder="Nhập mật khẩu" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} />
+              </div>
+              {authMessage.text && (
+                <div className={`auth-message ${authMessage.success ? 'success' : 'error'}`}>
+                  {authMessage.text}
+                </div>
+              )}
+              <button className="btn btn-primary btn-full" onClick={signup}>
+                Đăng ký
+              </button>
+              <div className="auth-switch">
+                Đã có tài khoản?&nbsp;
+                <button
+                  className="auth-link"
+                  onClick={() => { setAuthView('login'); setAuthMessage({ text: '', success: false }); }}
+                >
+                  Đăng nhập
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -165,69 +215,110 @@ function App() {
     );
   }
 
-  /* ---------- Dashboard ---------- */
+  /* ── Dashboard ── */
   return (
     <div className="app">
       {/* Header */}
       <header className="app-header">
-        <div>
-          <h1>⚙ Quản Lý Kỹ Thuật</h1>
-          <div className="header-subtitle">Technical Management System</div>
+        <div className="header-left">
+          <button
+            className="sidebar-toggle-btn"
+            onClick={() => setSidebarOpen((o) => !o)}
+            title="Mở/Đóng menu"
+            aria-label="Toggle sidebar"
+          >
+            ☰
+          </button>
+          <div className="header-brand">
+            <span className="header-brand-icon">⚙</span>
+            <div>
+              <div className="header-title">Quản Lý Kỹ Thuật</div>
+              <div className="header-subtitle">Technical Management System</div>
+            </div>
+          </div>
         </div>
         <div className="header-right">
-          <span className="user-badge">
-            {user.fullName}
-            <span className="role-tag">{user.role}</span>
-          </span>
-          <button className="btn btn-sm btn-signout" onClick={signOut}>Đăng xuất</button>
+          <button
+            className="btn btn-sm btn-account"
+            onClick={() => setAccountPanelOpen(true)}
+            title="Thông tin tài khoản"
+          >
+            👤 {user.fullName}
+          </button>
+          <button className="btn btn-sm btn-signout" onClick={() => signOut()}>
+            Đăng xuất
+          </button>
         </div>
       </header>
 
-      {/* Entity Tabs */}
-      <nav className="entity-tabs">
-        {entities.map((entity) => (
+      {/* Body: sidebar + content */}
+      <div className="app-body">
+        {/* Sidebar */}
+        <nav className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+          <div className="sidebar-section-title">Trang chủ</div>
           <button
-            key={entity}
-            onClick={() => { setActiveEntity(entity); setActiveTab('data'); }}
-            className={`entity-tab ${activeEntity === entity && activeTab === 'data' ? 'active' : ''}`}
+            className={`sidebar-item ${activeView === 'home' ? 'active' : ''}`}
+            onClick={() => setActiveView('home')}
           >
-            {ENTITY_LABELS[entity]}
+            <span className="sidebar-icon">🏠</span>
+            <span className="sidebar-label">Trang chủ</span>
           </button>
-        ))}
-        {user.role === 'admin' && (
-          <>
+
+          <div className="sidebar-section-title">Dữ liệu</div>
+          {entities.map((entity) => (
             <button
-              className={`entity-tab ${activeTab === 'users' ? 'active' : ''}`}
-              onClick={() => setActiveTab('users')}
+              key={entity}
+              className={`sidebar-item ${activeView === entity ? 'active' : ''}`}
+              onClick={() => setActiveView(entity)}
             >
-              👥 Quản lý tài khoản
+              <span className="sidebar-icon">{ENTITY_ICONS[entity] || '📋'}</span>
+              <span className="sidebar-label">{ENTITY_LABELS[entity]}</span>
             </button>
-            <button
-              className={`entity-tab ${activeTab === 'transfer' ? 'active' : ''}`}
-              onClick={() => setActiveTab('transfer')}
-            >
-              📦 Nhập/Xuất dữ liệu
-            </button>
-          </>
-        )}
-      </nav>
+          ))}
 
-      {/* Content */}
-      <div className="content-area">
-        {message && <div className="status-msg">{message}</div>}
+          {user.role === 'admin' && (
+            <>
+              <div className="sidebar-section-title">Quản trị</div>
+              <button
+                className={`sidebar-item ${activeView === 'transfer' ? 'active' : ''}`}
+                onClick={() => setActiveView('transfer')}
+              >
+                <span className="sidebar-icon">📦</span>
+                <span className="sidebar-label">Nhập/Xuất dữ liệu</span>
+              </button>
+            </>
+          )}
+        </nav>
 
-        {activeTab === 'data' && (
-          <EntitySection entity={activeEntity} entityLabel={ENTITY_LABELS[activeEntity]} credential={credential} canEdit={canEdit} />
-        )}
+        {/* Content */}
+        <main className="content-area">
+          {activeView === 'home' && (
+            <HomePage user={user} onNavigate={(entity) => setActiveView(entity)} />
+          )}
 
-        {activeTab === 'users' && user.role === 'admin' && (
-          <AdminUsers credential={credential} />
-        )}
+          {entities.includes(activeView) && (
+            <EntitySection
+              entity={activeView}
+              entityLabel={ENTITY_LABELS[activeView]}
+              credential={credential}
+              canEdit={canEdit}
+            />
+          )}
 
-        {activeTab === 'transfer' && user.role === 'admin' && (
-          <AdminDataTransfer credential={credential} />
-        )}
+          {activeView === 'transfer' && user.role === 'admin' && (
+            <AdminDataTransfer credential={credential} />
+          )}
+        </main>
       </div>
+
+      {/* Account panel overlay */}
+      {accountPanelOpen && (
+        <AccountPanel
+          user={user}
+          credential={credential}
+          onClose={() => setAccountPanelOpen(false)}
+        />
+      )}
     </div>
   );
 }

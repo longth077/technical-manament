@@ -1,15 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Api } from '../services/api';
-
-function downloadText(content, filename) {
-  const blob = new Blob([content], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -21,47 +11,51 @@ function downloadBlob(blob, filename) {
 }
 
 export default function AdminDataTransfer({ credential }) {
-  const [sqlInput, setSqlInput] = useState('');
-  const [excelBase64, setExcelBase64] = useState('');
   const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef(null);
 
-  const exportSql = async () => {
-    try {
-      const sql = await Api.exportAllSql(credential);
-      downloadText(sql, 'technical-management.sql');
-      setMessage('Xuất SQL thành công');
-    } catch (e) {
-      setMessage(e.message);
-    }
+  const notify = (msg, error = false) => {
+    setMessage(msg);
+    setIsError(error);
   };
 
   const exportExcel = async () => {
     try {
       const blob = await Api.exportAllExcel(credential);
-      downloadBlob(blob, 'technical-management.xlsx');
-      setMessage('Xuất Excel thành công');
+      downloadBlob(blob, 'quan-ly-ky-thuat.xlsx');
+      notify('Xuất Excel thành công');
     } catch (e) {
-      setMessage(e.message);
+      notify(e.message, true);
     }
   };
 
-  const importSql = async () => {
-    try {
-      await Api.importSql(sqlInput, credential);
-      setMessage('Nhập SQL thành công');
-      setSqlInput('');
-    } catch (e) {
-      setMessage(e.message);
-    }
-  };
+  const handleFileSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const importExcel = async () => {
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      notify('Vui lòng chọn file Excel (.xlsx hoặc .xls)', true);
+      return;
+    }
+
+    setImporting(true);
+    notify('');
     try {
-      await Api.importExcel(excelBase64, credential);
-      setMessage('Nhập Excel thành công');
-      setExcelBase64('');
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      await Api.importExcel(base64, credential);
+      notify('Nhập dữ liệu Excel thành công');
     } catch (e) {
-      setMessage(e.message);
+      notify(e.message, true);
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -72,44 +66,36 @@ export default function AdminDataTransfer({ credential }) {
           <h3>📦 Nhập / Xuất dữ liệu</h3>
         </div>
         <div className="panel-body">
-          {message && <div className="status-msg">{message}</div>}
+          {message && (
+            <div className={isError ? 'error-msg' : 'status-msg'} style={{ marginBottom: '1rem' }}>
+              {message}
+            </div>
+          )}
 
-          {/* Export Section */}
           <div className="transfer-grid">
+            {/* Export */}
             <div className="transfer-card">
-              <h4>📤 Xuất toàn bộ dữ liệu</h4>
-              <p>Tải toàn bộ dữ liệu hệ thống dưới dạng SQL hoặc Excel.</p>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className="btn btn-primary" onClick={exportSql}>Xuất SQL</button>
-                <button className="btn btn-success" onClick={exportExcel}>Xuất Excel</button>
-              </div>
+              <h4>📤 Xuất dữ liệu</h4>
+              <p>Tải toàn bộ dữ liệu hệ thống ra file Excel.</p>
+              <button className="btn btn-success" onClick={exportExcel}>
+                📊 Xuất Excel
+              </button>
             </div>
 
+            {/* Import */}
             <div className="transfer-card">
-              <h4>📥 Nhập dữ liệu SQL</h4>
-              <p>Dán nội dung SQL đã xuất vào ô bên dưới.</p>
-              <textarea
-                className="form-textarea"
-                rows={5}
-                value={sqlInput}
-                onChange={(e) => setSqlInput(e.target.value)}
-                placeholder="Dán nội dung SQL ở đây..."
+              <h4>📥 Nhập dữ liệu Excel</h4>
+              <p>Chọn file Excel (.xlsx) đã được xuất từ hệ thống để nhập lại dữ liệu.</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                className="file-input"
+                onChange={handleFileSelect}
+                disabled={importing}
               />
-              <button className="btn btn-primary btn-sm" onClick={importSql} disabled={!sqlInput.trim()}>Nhập SQL</button>
+              {importing && <div className="loading-bar" style={{ padding: '0.5rem 0' }}>Đang nhập dữ liệu...</div>}
             </div>
-          </div>
-
-          <div className="transfer-card" style={{ marginTop: '1.25rem' }}>
-            <h4>📥 Nhập dữ liệu Excel (base64)</h4>
-            <p>Dán nội dung Excel đã mã hóa base64 vào ô bên dưới.</p>
-            <textarea
-              className="form-textarea"
-              rows={4}
-              value={excelBase64}
-              onChange={(e) => setExcelBase64(e.target.value)}
-              placeholder="Dán nội dung base64 ở đây..."
-            />
-            <button className="btn btn-primary btn-sm" onClick={importExcel} disabled={!excelBase64.trim()}>Nhập Excel</button>
           </div>
         </div>
       </div>

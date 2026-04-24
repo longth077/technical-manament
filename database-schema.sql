@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     email       VARCHAR(255) NOT NULL UNIQUE,
     password    VARCHAR(255) NOT NULL,
     full_name   VARCHAR(255) NOT NULL,
-    role        VARCHAR(255) NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
+    role        VARCHAR(255) NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user', 'readonly')),
+    status      VARCHAR(255) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved')),
     created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -443,10 +444,10 @@ CREATE INDEX idx_materials_classification ON materials(classification);
 -- ============================================================================
 -- Note: Passwords should be bcrypt-hashed in production. The values below are
 -- placeholder hashes for illustration only.
-INSERT INTO users (username, email, password, full_name, role) VALUES
-    ('admin', 'admin@quanlykythuat.vn', '$2b$10$examplehashforpassword1234567890abcde', 'Quản Trị Viên', 'admin'),
-    ('nvkt01', 'nvkt01@quanlykythuat.vn', '$2b$10$examplehashforpassword1234567890abcde', 'Nguyễn Văn An', 'user'),
-    ('nvkt02', 'nvkt02@quanlykythuat.vn', '$2b$10$examplehashforpassword1234567890abcde', 'Trần Thị Bình', 'user');
+INSERT INTO users (username, email, password, full_name, role, status) VALUES
+    ('admin', 'thanhpxd49@gmail.com', '$2b$10$5s0AEt6NNwaZZ0IL5g7GPunT33kSeEQykpsmbgomQwsdeTeQNfs7K', 'Quản Trị Viên', 'admin', 'approved'),
+    ('nvkt01', 'nvkt01@quanlykythuat.vn', '$2b$10$examplehashforpassword1234567890abcde', 'Nguyễn Văn An', 'user', 'approved'),
+    ('nvkt02', 'nvkt02@quanlykythuat.vn', '$2b$10$examplehashforpassword1234567890abcde', 'Trần Thị Bình', 'readonly', 'approved');
 
 -- ============================================================================
 -- Sample Unit Info

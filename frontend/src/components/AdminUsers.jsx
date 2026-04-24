@@ -5,6 +5,8 @@ export default function AdminUsers({ credential }) {
   const [users, setUsers] = useState([]);
   const [pending, setPending] = useState([]);
   const [error, setError] = useState('');
+  const [approvalTarget, setApprovalTarget] = useState(null);
+  const [approving, setApproving] = useState(false);
 
   const load = async () => {
     try {
@@ -33,12 +35,17 @@ export default function AdminUsers({ credential }) {
     };
   }, [credential]);
 
-  const approve = async (id) => {
+  const approve = async () => {
+    if (!approvalTarget) return;
     try {
-      await Api.approveUser(id, credential);
+      setApproving(true);
+      await Api.approveUser(approvalTarget.id, credential);
+      setApprovalTarget(null);
       await load();
     } catch (e) {
       setError(e.message);
+    } finally {
+      setApproving(false);
     }
   };
 
@@ -81,7 +88,7 @@ export default function AdminUsers({ credential }) {
                   <span className="name">{u.username}</span>
                   <span className="email">{u.email}</span>
                 </div>
-                <button className="btn btn-sm btn-success" onClick={() => approve(u.id)}>✓ Duyệt</button>
+                <button className="btn btn-sm btn-success" onClick={() => setApprovalTarget(u)}>✓ Duyệt</button>
               </li>
             ))}
           </ul>
@@ -146,6 +153,29 @@ export default function AdminUsers({ credential }) {
           </div>
         )}
       </div>
+
+      {approvalTarget && (
+        <div className="modal-overlay" onClick={() => setApprovalTarget(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h4>Xác nhận duyệt tài khoản</h4>
+            </div>
+            <div className="modal-body">
+              <p>Bạn có chắc muốn duyệt tài khoản này không?</p>
+              <div className="modal-user-info">
+                <div><strong>Tên đăng nhập:</strong> {approvalTarget.username}</div>
+                <div><strong>Email:</strong> {approvalTarget.email}</div>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-sm btn-secondary" onClick={() => setApprovalTarget(null)} disabled={approving}>Hủy</button>
+              <button className="btn btn-sm btn-success" onClick={approve} disabled={approving}>
+                {approving ? 'Đang duyệt...' : 'Xác nhận duyệt'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

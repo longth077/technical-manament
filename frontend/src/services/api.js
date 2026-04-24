@@ -1,37 +1,26 @@
+import { mapApiErrorMessage } from './errorMapper';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 const makeAuthHeader = (credential) => ({ Authorization: `Basic ${credential}` });
 
-const ERROR_TRANSLATIONS = {
-  'Username already exists': 'Tên đăng nhập đã tồn tại',
-  'Email already exists': 'Email đã tồn tại',
-  'Authentication required': 'Yêu cầu xác thực',
-  'Invalid credentials': 'Thông tin đăng nhập không đúng',
-  'Account is pending approval': 'Tài khoản đang chờ quản trị viên duyệt',
-  'Account not approved': 'Tài khoản chưa được duyệt',
-  'Request failed': 'Yêu cầu thất bại',
-  'Forbidden': 'Bạn không có quyền thực hiện thao tác này',
-  'Not found': 'Không tìm thấy dữ liệu',
-  'Internal server error': 'Lỗi máy chủ, vui lòng thử lại',
-};
-
-function translateError(message) {
-  return ERROR_TRANSLATIONS[message] || message;
-}
-
 async function request(path, { method = 'GET', credential, body, responseType = 'json' } = {}) {
-  const res = await fetch(`${API_URL}${path}`, {
-    method,
-    headers: {
-      ...(credential ? makeAuthHeader(credential) : {}),
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method,
+      headers: {
+        ...(credential ? makeAuthHeader(credential) : {}),
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (error) {
+    throw new Error(mapApiErrorMessage(error.message));
+  }
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(translateError(data.message || 'Request failed'));
+    throw new Error(mapApiErrorMessage(data.message || 'Request failed'));
   }
 
   if (responseType === 'blob') return res.blob();

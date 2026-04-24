@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Api } from '../services/api';
 import TableForm from './TableForm';
+import { getColumnLabel } from '../services/entitySchema';
 
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -18,6 +19,8 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
   const [showCreate, setShowCreate] = useState(false);
   const [editingRow, setEditingRow] = useState(null); // row being edited (inline)
   const [loadKey, setLoadKey] = useState(0);
+  const [createFormKey, setCreateFormKey] = useState(0);
+  const [editFormKey, setEditFormKey] = useState(0);
 
   const loadRows = () => {
     setLoadKey((k) => k + 1);
@@ -49,6 +52,8 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
     try {
       await Api.createEntity(entity, payload, credential);
       setShowCreate(false);
+      setError('');
+      setCreateFormKey((k) => k + 1);
       loadRows();
     } catch (e) {
       setError(e.message);
@@ -60,6 +65,8 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
     try {
       await Api.updateEntity(entity, editingRow.id, payload, credential);
       setEditingRow(null);
+      setError('');
+      setEditFormKey((k) => k + 1);
       loadRows();
     } catch (e) {
       setError(e.message);
@@ -87,6 +94,30 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
 
   const columns = rows.length ? Object.keys(rows[0]) : [];
 
+  const handleToggleCreate = () => {
+    setError('');
+    setEditingRow(null);
+    setEditFormKey((k) => k + 1);
+    if (showCreate) {
+      setShowCreate(false);
+      setCreateFormKey((k) => k + 1);
+      return;
+    }
+    setShowCreate(true);
+  };
+
+  const handleCancelCreate = () => {
+    setShowCreate(false);
+    setError('');
+    setCreateFormKey((k) => k + 1);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRow(null);
+    setError('');
+    setEditFormKey((k) => k + 1);
+  };
+
   return (
     <section className="entity-section">
       <div className="panel">
@@ -98,7 +129,7 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
             {canEdit && (
               <button
                 className="btn btn-sm btn-primary"
-                onClick={() => { setShowCreate(!showCreate); setEditingRow(null); }}
+                onClick={handleToggleCreate}
               >
                 {showCreate ? '✕ Đóng' : '+ Thêm mới'}
               </button>
@@ -112,9 +143,10 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
         {canEdit && showCreate && (
           <div className="inline-form-wrap">
             <TableForm
+              key={createFormKey}
               entity={entity}
               onSubmit={createRow}
-              onCancel={() => setShowCreate(false)}
+              onCancel={handleCancelCreate}
               submitLabel="Tạo mới"
             />
           </div>
@@ -125,10 +157,11 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
           <div className="inline-form-wrap">
             <div className="inline-form-title">Sửa dòng #{editingRow.id}</div>
             <TableForm
+              key={`${editingRow.id}-${editFormKey}`}
               entity={entity}
               initialData={editingRow}
               onSubmit={updateRow}
-              onCancel={() => setEditingRow(null)}
+              onCancel={handleCancelEdit}
               submitLabel="Cập nhật"
             />
           </div>
@@ -145,7 +178,7 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
               <table className="data-table">
                 <thead>
                   <tr>
-                    {columns.map((c) => <th key={c}>{c}</th>)}
+                    {columns.map((c) => <th key={c}>{getColumnLabel(entity, c)}</th>)}
                     {canEdit && <th>Thao tác</th>}
                   </tr>
                 </thead>
@@ -161,7 +194,12 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
                           <div className="td-actions">
                             <button
                               className="btn btn-sm btn-outline"
-                              onClick={() => { setEditingRow(row); setShowCreate(false); }}
+                              onClick={() => {
+                                setEditingRow(row);
+                                setShowCreate(false);
+                                setCreateFormKey((k) => k + 1);
+                                setError('');
+                              }}
                             >
                               Sửa
                             </button>

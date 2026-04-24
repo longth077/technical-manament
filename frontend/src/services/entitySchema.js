@@ -240,3 +240,14 @@ export function buildDefaultRow(entity) {
   }
   return row;
 }
+
+export function getColumnLabel(entity, key) {
+  if (key === 'id') return 'Mã';
+  if (key === 'created_at') return 'Ngày tạo';
+  if (key === 'updated_at') return 'Cập nhật lần cuối';
+  if (key === 'uploaded_at') return 'Ngày tải lên';
+  const schema = ENTITY_SCHEMAS[entity] || [];
+  const column = schema.find((item) => item.key === key);
+  if (column?.label) return column.label;
+  return key.replaceAll('_', ' ');
+}

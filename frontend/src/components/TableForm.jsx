@@ -16,16 +16,16 @@ import { ENTITY_SCHEMAS, buildDefaultRow } from '../services/entitySchema';
  */
 export default function TableForm({ entity, initialData, onSubmit, onCancel, submitLabel = 'Lưu' }) {
   const schema = ENTITY_SCHEMAS[entity];
+  const defaultFields = buildDefaultRow(entity);
 
   // Mode: 'table' or 'json'
   const [mode, setMode] = useState('table');
 
   // Table-mode state: field values keyed by column key
   const [fields, setFields] = useState(() => {
-    const defaults = buildDefaultRow(entity);
     if (initialData) {
       // Merge initial data (skip id / auto fields)
-      const merged = { ...defaults };
+      const merged = { ...defaultFields };
       for (const col of schema || []) {
         if (initialData[col.key] !== undefined && initialData[col.key] !== null) {
           merged[col.key] = String(initialData[col.key]);
@@ -33,7 +33,7 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
       }
       return merged;
     }
-    return defaults;
+    return defaultFields;
   });
 
   // JSON-mode state
@@ -50,6 +50,36 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
   });
 
   const [error, setError] = useState('');
+
+  const resetForm = () => {
+    setError('');
+    setMode('table');
+    setFields(() => {
+      if (!initialData) return buildDefaultRow(entity);
+      const merged = { ...buildDefaultRow(entity) };
+      for (const col of schema || []) {
+        if (initialData[col.key] !== undefined && initialData[col.key] !== null) {
+          merged[col.key] = String(initialData[col.key]);
+        }
+      }
+      return merged;
+    });
+    if (initialData) {
+      const copy = { ...initialData };
+      delete copy.id;
+      delete copy.created_at;
+      delete copy.updated_at;
+      delete copy.uploaded_at;
+      setJsonText(JSON.stringify(copy, null, 2));
+    } else {
+      setJsonText('{}');
+    }
+  };
+
+  const handleCancel = () => {
+    resetForm();
+    onCancel?.();
+  };
 
   const setField = (key, value) => {
     setFields((prev) => ({ ...prev, [key]: value }));
@@ -137,7 +167,7 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
         {error && <div className="error-msg">{error}</div>}
         <div className="table-form-actions">
           <button className="btn btn-sm btn-success" onClick={handleSubmit}>{submitLabel}</button>
-          {onCancel && <button className="btn btn-sm btn-secondary" onClick={onCancel}>Hủy</button>}
+          {onCancel && <button className="btn btn-sm btn-secondary" onClick={handleCancel}>Hủy</button>}
         </div>
       </div>
     );
@@ -214,7 +244,7 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
 
       <div className="table-form-actions">
         <button className="btn btn-sm btn-success" onClick={handleSubmit}>{submitLabel}</button>
-        {onCancel && <button className="btn btn-sm btn-secondary" onClick={onCancel}>Hủy</button>}
+        {onCancel && <button className="btn btn-sm btn-secondary" onClick={handleCancel}>Hủy</button>}
       </div>
     </div>
   );

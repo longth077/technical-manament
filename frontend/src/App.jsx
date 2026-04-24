@@ -21,6 +21,7 @@ function App() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupUsername, setSignupUsername] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [authMessage, setAuthMessage] = useState({ text: '', success: false });
 
   /* ── App state ── */
@@ -66,7 +67,7 @@ function App() {
 
   /* ── Sign up ── */
   const signup = async () => {
-    if (!signupUsername || !signupEmail || !signupPassword || !signupFullName) {
+    if (!signupUsername || !signupEmail || !signupPassword || !signupConfirmPassword || !signupFullName) {
       setAuthMessage({ text: 'Vui lòng điền đầy đủ tất cả các trường', success: false });
       return;
     }
@@ -74,10 +75,18 @@ function App() {
       setAuthMessage({ text: 'Mật khẩu phải có ít nhất 8 ký tự', success: false });
       return;
     }
+    if (signupPassword !== signupConfirmPassword) {
+      setAuthMessage({ text: 'Mật khẩu xác nhận không khớp', success: false });
+      return;
+    }
     try {
       await Api.signup({ username: signupUsername, email: signupEmail, password: signupPassword, fullName: signupFullName });
       setAuthMessage({ text: 'Đăng ký thành công! Vui lòng chờ quản trị viên duyệt tài khoản.', success: true });
-      setSignupFullName(''); setSignupEmail(''); setSignupUsername(''); setSignupPassword('');
+      setSignupFullName('');
+      setSignupEmail('');
+      setSignupUsername('');
+      setSignupPassword('');
+      setSignupConfirmPassword('');
     } catch (e) {
       setAuthMessage({ text: e.message, success: false });
     }
@@ -165,7 +174,11 @@ function App() {
                 Chưa có tài khoản?&nbsp;
                 <button
                   className="auth-link"
-                  onClick={() => { setAuthView('signup'); setAuthMessage({ text: '', success: false }); }}
+                  onClick={() => {
+                    setAuthView('signup');
+                    setAuthMessage({ text: '', success: false });
+                    setSignupConfirmPassword('');
+                  }}
                 >
                   Đăng ký ngay
                 </button>
@@ -191,6 +204,10 @@ function App() {
                 <label className="form-label">Mật khẩu (ít nhất 8 ký tự)</label>
                 <input className="form-input" type="password" placeholder="Nhập mật khẩu" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} />
               </div>
+              <div className="form-group">
+                <label className="form-label">Xác nhận mật khẩu</label>
+                <input className="form-input" type="password" placeholder="Nhập lại mật khẩu" value={signupConfirmPassword} onChange={(e) => setSignupConfirmPassword(e.target.value)} />
+              </div>
               {authMessage.text && (
                 <div className={`auth-message ${authMessage.success ? 'success' : 'error'}`}>
                   {authMessage.text}
@@ -203,7 +220,11 @@ function App() {
                 Đã có tài khoản?&nbsp;
                 <button
                   className="auth-link"
-                  onClick={() => { setAuthView('login'); setAuthMessage({ text: '', success: false }); }}
+                  onClick={() => {
+                    setAuthView('login');
+                    setAuthMessage({ text: '', success: false });
+                    setSignupConfirmPassword('');
+                  }}
                 >
                   Đăng nhập
                 </button>

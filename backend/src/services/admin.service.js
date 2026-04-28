@@ -29,9 +29,11 @@ class AdminService {
   }
 
   async approveUser(id) {
-    const user = await this.userRepository.updateById(id, { status: 'approved' });
+    const user = await this.userRepository.updateById(id, {
+      status: "approved",
+    });
     if (!user) {
-      const err = new Error('User not found');
+      const err = new Error("User not found");
       err.status = 404;
       throw err;
     }
@@ -41,7 +43,7 @@ class AdminService {
   async updateRole(id, role) {
     const user = await this.userRepository.updateById(id, { role });
     if (!user) {
-      const err = new Error('User not found');
+      const err = new Error("User not found");
       err.status = 404;
       throw err;
     }
@@ -51,7 +53,7 @@ class AdminService {
   async deleteUser(id) {
     const ok = await this.userRepository.deleteById(id);
     if (!ok) {
-      const err = new Error('User not found');
+      const err = new Error("User not found");
       err.status = 404;
       throw err;
     }

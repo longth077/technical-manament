@@ -6,8 +6,8 @@ class EntityController {
 
   list = async (req, res, next) => {
     try {
-      const rows = await this.entityService.list(req.params.entity, req.query);
-      res.json({ rows });
+      const result = await this.entityService.list(req.params.entity, req.query);
+      res.json(result);
     } catch (error) {
       next(error);
     }
@@ -24,7 +24,11 @@ class EntityController {
 
   update = async (req, res, next) => {
     try {
-      const row = await this.entityService.update(req.params.entity, req.params.id, req.body);
+      const row = await this.entityService.update(
+        req.params.entity,
+        req.params.id,
+        req.body,
+      );
       res.json({ row });
     } catch (error) {
       next(error);
@@ -34,7 +38,7 @@ class EntityController {
   remove = async (req, res, next) => {
     try {
       await this.entityService.remove(req.params.entity, req.params.id);
-      res.json({ message: 'Deleted' });
+      res.json({ message: "Deleted" });
     } catch (error) {
       next(error);
     }
@@ -44,8 +48,14 @@ class EntityController {
     try {
       const entity = req.params.entity;
       const buffer = await this.dataTransferService.exportExcel([entity]);
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="${entity}-report.xlsx"`);
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${entity}-report.xlsx"`,
+      );
       res.send(Buffer.from(buffer));
     } catch (error) {
       next(error);

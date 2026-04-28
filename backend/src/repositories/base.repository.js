@@ -4,7 +4,24 @@ class BaseRepository {
   }
 
   async findAll(where = {}) {
-    return this.model.findAll({ where, order: [['id', 'ASC']] });
+    return this.model.findAll({ where, order: [["id", "ASC"]] });
+  }
+
+  async findPaginated(where = {}, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+    const { count, rows } = await this.model.findAndCountAll({
+      where,
+      order: [["id", "ASC"]],
+      limit: +limit,
+      offset: +offset,
+    });
+    return {
+      rows,
+      total: count,
+      page: +page,
+      limit: +limit,
+      pages: Math.ceil(count / limit) || 1,
+    };
   }
 
   async findById(id) {

@@ -1,16 +1,19 @@
-const basicAuth = require('basic-auth');
+const basicAuth = require("basic-auth");
 
 const authMiddleware = (authService) => async (req, res, next) => {
   try {
     const credentials = basicAuth(req);
     if (!credentials?.name || !credentials?.pass) {
-      res.set('WWW-Authenticate', 'Basic realm="Technical Management"');
-      return res.status(401).json({ message: 'Authentication required' });
+      res.set("WWW-Authenticate", 'Basic realm="Technical Management"');
+      return res.status(401).json({ message: "Authentication required" });
     }
 
-    const user = await authService.authenticate(credentials.name, credentials.pass);
+    const user = await authService.authenticate(
+      credentials.name,
+      credentials.pass,
+    );
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     req.user = {

@@ -1,21 +1,28 @@
-import { useEffect, useState } from 'react';
-import { Api } from '../services/api';
-import TableForm from './TableForm';
-import { getColumnLabel } from '../services/entitySchema';
+import { useEffect, useState } from "react";
+import { Api } from "../services/api";
+import TableForm from "./TableForm";
+import M2mPanel from "./M2mPanel";
+import { getColumnLabel } from "../services/entitySchema";
+import { M2M_CONFIG } from "../services/entityConfig";
 
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
 }
 
-export default function EntitySection({ entity, entityLabel, credential, canEdit }) {
+export default function EntitySection({
+  entity,
+  entityLabel,
+  credential,
+  canEdit,
+}) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [editingRow, setEditingRow] = useState(null); // row being edited (inline)
   const [loadKey, setLoadKey] = useState(0);
@@ -32,7 +39,7 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
       .then((data) => {
         if (active) {
           setRows(data.rows || []);
-          setError('');
+          setError("");
           setShowCreate(false);
           setEditingRow(null);
         }
@@ -52,7 +59,7 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
     try {
       await Api.createEntity(entity, payload, credential);
       setShowCreate(false);
-      setError('');
+      setError("");
       setCreateFormKey((k) => k + 1);
       loadRows();
     } catch (e) {
@@ -65,7 +72,7 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
     try {
       await Api.updateEntity(entity, editingRow.id, payload, credential);
       setEditingRow(null);
-      setError('');
+      setError("");
       setEditFormKey((k) => k + 1);
       loadRows();
     } catch (e) {
@@ -74,7 +81,7 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
   };
 
   const deleteRow = async (id) => {
-    if (!confirm('Bạn có chắc muốn xóa dòng này?')) return;
+    if (!confirm("Bạn có chắc muốn xóa dòng này?")) return;
     try {
       await Api.deleteEntity(entity, id, credential);
       loadRows();
@@ -95,7 +102,7 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
   const columns = rows.length ? Object.keys(rows[0]) : [];
 
   const handleToggleCreate = () => {
-    setError('');
+    setError("");
     setEditingRow(null);
     setEditFormKey((k) => k + 1);
     if (showCreate) {
@@ -108,13 +115,13 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
 
   const handleCancelCreate = () => {
     setShowCreate(false);
-    setError('');
+    setError("");
     setCreateFormKey((k) => k + 1);
   };
 
   const handleCancelEdit = () => {
     setEditingRow(null);
-    setError('');
+    setError("");
     setEditFormKey((k) => k + 1);
   };
 
@@ -124,20 +131,28 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
         <div className="panel-header">
           <h3>{entityLabel || entity}</h3>
           <div className="panel-header-actions">
-            <button className="btn btn-sm btn-outline" onClick={exportExcel}>📊 Xuất Excel</button>
-            <button className="btn btn-sm btn-outline" onClick={loadRows}>↻ Làm mới</button>
+            <button className="btn btn-sm btn-outline" onClick={exportExcel}>
+              📊 Xuất Excel
+            </button>
+            <button className="btn btn-sm btn-outline" onClick={loadRows}>
+              ↻ Làm mới
+            </button>
             {canEdit && (
               <button
                 className="btn btn-sm btn-primary"
                 onClick={handleToggleCreate}
               >
-                {showCreate ? '✕ Đóng' : '+ Thêm mới'}
+                {showCreate ? "✕ Đóng" : "+ Thêm mới"}
               </button>
             )}
           </div>
         </div>
 
-        {error && <div className="error-msg" style={{ margin: '0.75rem 1.25rem 0' }}>{error}</div>}
+        {error && (
+          <div className="error-msg" style={{ margin: "0.75rem 1.25rem 0" }}>
+            {error}
+          </div>
+        )}
 
         {/* --- CREATE FORM --- */}
         {canEdit && showCreate && (
@@ -148,6 +163,7 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
               onSubmit={createRow}
               onCancel={handleCancelCreate}
               submitLabel="Tạo mới"
+              credential={credential}
             />
           </div>
         )}
@@ -163,7 +179,28 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
               onSubmit={updateRow}
               onCancel={handleCancelEdit}
               submitLabel="Cập nhật"
+              credential={credential}
             />
+          </div>
+        )}
+
+        {/* --- M2M PANELS (shown below edit form) --- */}
+        {canEdit && editingRow && !showCreate && M2M_CONFIG[entity] && (
+          <div className="m2m-panels-wrap">
+            {M2M_CONFIG[entity].map((cfg) => (
+              <M2mPanel
+                key={cfg.junctionEntity}
+                staffId={editingRow.id}
+                junctionEntity={cfg.junctionEntity}
+                filterField={cfg.filterField}
+                targetEntity={cfg.targetEntity}
+                targetIdField={cfg.targetIdField}
+                targetLabelField={cfg.targetLabelField}
+                label={cfg.label}
+                credential={credential}
+                canEdit={canEdit}
+              />
+            ))}
           </div>
         )}
 
@@ -178,7 +215,9 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
               <table className="data-table">
                 <thead>
                   <tr>
-                    {columns.map((c) => <th key={c}>{getColumnLabel(entity, c)}</th>)}
+                    {columns.map((c) => (
+                      <th key={c}>{getColumnLabel(entity, c)}</th>
+                    ))}
                     {canEdit && <th>Thao tác</th>}
                   </tr>
                 </thead>
@@ -186,9 +225,11 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
                   {rows.map((row) => (
                     <tr
                       key={row.id ?? JSON.stringify(row)}
-                      className={editingRow?.id === row.id ? 'row-editing' : ''}
+                      className={editingRow?.id === row.id ? "row-editing" : ""}
                     >
-                      {columns.map((c) => <td key={c}>{String(row[c] ?? '')}</td>)}
+                      {columns.map((c) => (
+                        <td key={c}>{String(row[c] ?? "")}</td>
+                      ))}
                       {canEdit && (
                         <td>
                           <div className="td-actions">
@@ -198,12 +239,17 @@ export default function EntitySection({ entity, entityLabel, credential, canEdit
                                 setEditingRow(row);
                                 setShowCreate(false);
                                 setCreateFormKey((k) => k + 1);
-                                setError('');
+                                setError("");
                               }}
                             >
                               Sửa
                             </button>
-                            <button className="btn btn-sm btn-danger" onClick={() => deleteRow(row.id)}>Xóa</button>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => deleteRow(row.id)}
+                            >
+                              Xóa
+                            </button>
                           </div>
                         </td>
                       )}

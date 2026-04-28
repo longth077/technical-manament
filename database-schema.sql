@@ -6,6 +6,46 @@
 -- ============================================================================
 
 -- ============================================================================
+-- 0. ENUM CONSTANTS (Centralized lookup for constant values)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS enum_constants (
+    id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    enum        VARCHAR(255) NOT NULL,
+    type        VARCHAR(100) NOT NULL,
+    created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_enum_constants_type_enum (type, enum)
+);
+
+INSERT IGNORE INTO enum_constants (enum, type) VALUES
+    ('Thiếu úy', 'staff_rank'),
+    ('Trung úy', 'staff_rank'),
+    ('Thượng uý', 'staff_rank'),
+    ('Đại úy', 'staff_rank'),
+    ('Thiếu tá', 'staff_rank'),
+    ('Trung tá', 'staff_rank'),
+    ('Thượng tá', 'staff_rank'),
+    ('Đại tá', 'staff_rank'),
+    ('Thiếu úy CN', 'staff_rank'),
+    ('Trung úy CN', 'staff_rank'),
+    ('Thượng uý CN', 'staff_rank'),
+    ('Đại úy CN', 'staff_rank'),
+    ('Thiếu tá CN', 'staff_rank'),
+    ('Trung tá CN', 'staff_rank'),
+    ('', 'staff_education'),
+    ('Sơ cấp', 'staff_education'),
+    ('Trung cấp', 'staff_education'),
+    ('Cao đẳng', 'staff_education'),
+    ('Đại học', 'staff_education'),
+    ('Thạc sĩ', 'staff_education'),
+    ('Khác', 'staff_education'),
+    ('image/jpeg', 'warehouse_image_file_type'),
+    ('image/png', 'warehouse_image_file_type'),
+    ('', 'repair_status'),
+    ('Chưa sửa', 'repair_status'),
+    ('Đang sửa', 'repair_status'),
+    ('Đã sửa', 'repair_status');
+
+-- ============================================================================
 -- 1. USERS (Authentication)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS users (
@@ -24,19 +64,19 @@ CREATE TABLE IF NOT EXISTS users (
 -- ============================================================================
 -- 2. UNIT INFO (Thông tin đơn vị) - singleton row
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS unit_info (
+CREATE TABLE IF NOT EXISTS unit_infoss (
     id                  TINYINT UNSIGNED NOT NULL DEFAULT 1 PRIMARY KEY CHECK (id = 1),
     unit_name           VARCHAR(255) NOT NULL DEFAULT 'TRUNG TÂM CÔNG NGHỆ XỬ LÝ BOM MÌN',
     technical_officer   VARCHAR(255) NOT NULL DEFAULT '',
     statistician        VARCHAR(255) NOT NULL DEFAULT ''
 );
 
-INSERT IGNORE INTO unit_info (id) VALUES (1);
+INSERT IGNORE INTO unit_infoss (id) VALUES (1);
 
 -- ============================================================================
 -- 3. OVERVIEW (Tổng quan khu kỹ thuật) - singleton row
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS overview (
+CREATE TABLE IF NOT EXISTS overviews (
     id                  TINYINT UNSIGNED NOT NULL DEFAULT 1 PRIMARY KEY CHECK (id = 1),
     position            VARCHAR(255) NOT NULL DEFAULT '',
     area                VARCHAR(255) NOT NULL DEFAULT '',
@@ -48,7 +88,7 @@ CREATE TABLE IF NOT EXISTS overview (
     land_certificate    VARCHAR(255) NOT NULL DEFAULT ''
 );
 
-INSERT IGNORE INTO overview (id) VALUES (1);
+INSERT IGNORE INTO overviews (id) VALUES (1);
 
 -- ============================================================================
 -- 4. STAFF (Danh sách cán bộ, chuyên môn kỹ thuật)
@@ -66,35 +106,21 @@ CREATE TABLE IF NOT EXISTS staff (
     full_name           VARCHAR(255) NOT NULL CHECK (length(trim(full_name)) > 0),
     date_of_birth       DATE DEFAULT NULL,
     id_number           VARCHAR(255) NOT NULL CHECK (length(trim(id_number)) > 0),
-    rank                VARCHAR(255) NOT NULL CHECK (
-                            rank IN (
-                                'Thiếu úy', 'Trung úy', 'Thượng uý', 'Đại úy',
-                                'Thiếu tá', 'Trung tá', 'Thượng tá', 'Đại tá',
-                                'Thiếu úy CN', 'Trung úy CN', 'Thượng uý CN',
-                                'Đại úy CN', 'Thiếu tá CN', 'Trung tá CN'
-                            )
-                        ),
+    rank_id             BIGINT UNSIGNED NOT NULL,
     position            VARCHAR(255) NOT NULL DEFAULT '',
     unit_department     VARCHAR(255) NOT NULL DEFAULT '',
-    education           VARCHAR(255) NOT NULL DEFAULT '' CHECK (
-                            education IN (
-                                '', 'Sơ cấp', 'Trung cấp', 'Cao đẳng',
-                                'Đại học', 'Thạc sĩ', 'Khác'
-                            )
-                        ),
-    assigned_warehouse  VARCHAR(255) NOT NULL DEFAULT '',
-    assigned_weapons    VARCHAR(255) NOT NULL DEFAULT '',
-    assigned_vehicles   VARCHAR(255) NOT NULL DEFAULT '',
-    assigned_equipment  VARCHAR(255) NOT NULL DEFAULT '',
+    education_id        BIGINT UNSIGNED NOT NULL,
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (rank_id) REFERENCES enum_constants(id),
+    FOREIGN KEY (education_id) REFERENCES enum_constants(id)
 );
 
 
 
 
 CREATE INDEX idx_staff_full_name ON staff(full_name);
-CREATE INDEX idx_staff_rank ON staff(rank);
+CREATE INDEX idx_staff_rank_id ON staff(rank_id);
 CREATE INDEX idx_staff_unit_department ON staff(unit_department);
 
 -- ============================================================================
@@ -132,12 +158,11 @@ CREATE TABLE IF NOT EXISTS warehouse_images (
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     warehouse_id    BIGINT UNSIGNED NOT NULL,
     file_path       VARCHAR(255) NOT NULL CHECK (length(trim(file_path)) > 0),
-    file_type       VARCHAR(255) NOT NULL DEFAULT 'image/jpeg' CHECK (
-                        file_type IN ('image/jpeg', 'image/png')
-                    ),
+    file_type_id    BIGINT UNSIGNED NOT NULL,
     description     VARCHAR(255) NOT NULL DEFAULT '',
     uploaded_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
+    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE,
+    FOREIGN KEY (file_type_id) REFERENCES enum_constants(id)
 );
 
 CREATE INDEX idx_warehouse_images_warehouse_id ON warehouse_images(warehouse_id);
@@ -345,14 +370,13 @@ CREATE TABLE IF NOT EXISTS tech_equipment (
     country             VARCHAR(255) NOT NULL DEFAULT '',
     year                INT DEFAULT NULL,
     allocation          INT NOT NULL DEFAULT 0 CHECK (allocation >= 0),
-    repair              VARCHAR(255) NOT NULL DEFAULT '' CHECK (
-                            repair IN ('', 'Chưa sửa', 'Đang sửa', 'Đã sửa')
-                        ),
+    repair_id           BIGINT UNSIGNED NOT NULL,
     operating_hours     DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (operating_hours >= 0),
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CHECK (year IS NULL OR year >= 1900),
-    CHECK (allocation <= quantity)
+    CHECK (allocation <= quantity),
+    FOREIGN KEY (repair_id) REFERENCES enum_constants(id)
 );
 
 
@@ -383,14 +407,13 @@ CREATE TABLE IF NOT EXISTS vehicles (
     country             VARCHAR(255) NOT NULL DEFAULT '',
     year                INT DEFAULT NULL,
     allocation          INT NOT NULL DEFAULT 0 CHECK (allocation >= 0),
-    repair              VARCHAR(255) NOT NULL DEFAULT '' CHECK (
-                            repair IN ('', 'Chưa sửa', 'Đang sửa', 'Đã sửa')
-                        ),
+    repair_id           BIGINT UNSIGNED NOT NULL,
     operating_hours     DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (operating_hours >= 0),
     km                  DECIMAL(15,2) NOT NULL DEFAULT 0 CHECK (km >= 0),
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CHECK (year IS NULL OR year >= 1900)
+    CHECK (year IS NULL OR year >= 1900),
+    FOREIGN KEY (repair_id) REFERENCES enum_constants(id)
 );
 
 
@@ -432,6 +455,129 @@ CREATE TABLE IF NOT EXISTS materials (
 CREATE INDEX idx_materials_name ON materials(name);
 CREATE INDEX idx_materials_classification ON materials(classification);
 
+-- ============================================================================
+-- 10. STAFF ASSIGNMENTS (Many-to-many with assigned entities)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS staff_warehouses (
+    id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    staff_id         BIGINT UNSIGNED NULL,
+    staff_name       VARCHAR(255) NULL,
+    warehouse_id     BIGINT UNSIGNED NULL,
+    warehouse_code   VARCHAR(255) NULL,
+    staff_key        VARCHAR(300) GENERATED ALWAYS AS (
+                        CASE
+                            WHEN staff_id IS NOT NULL THEN CONCAT('ID:', staff_id)
+                            ELSE CONCAT('NAME:', lower(trim(staff_name)))
+                        END
+                    ) STORED,
+    warehouse_key    VARCHAR(300) GENERATED ALWAYS AS (
+                        CASE
+                            WHEN warehouse_id IS NOT NULL THEN CONCAT('ID:', warehouse_id)
+                            ELSE CONCAT('CODE:', lower(trim(warehouse_code)))
+                        END
+                    ) STORED,
+    assigned_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE,
+    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_staff_warehouses_assignment (staff_key, warehouse_key),
+    CHECK (
+        staff_id IS NOT NULL OR (staff_name IS NOT NULL AND length(trim(staff_name)) > 0)
+    ),
+    CHECK (
+        warehouse_id IS NOT NULL OR (warehouse_code IS NOT NULL AND length(trim(warehouse_code)) > 0)
+    )
+);
+
+CREATE TABLE IF NOT EXISTS staff_weapons (
+    id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    staff_id         BIGINT UNSIGNED NULL,
+    staff_name       VARCHAR(255) NULL,
+    weapon_id        BIGINT UNSIGNED NULL,
+    weapon_name      VARCHAR(255) NULL,
+    staff_key        VARCHAR(300) GENERATED ALWAYS AS (
+                        CASE
+                            WHEN staff_id IS NOT NULL THEN CONCAT('ID:', staff_id)
+                            ELSE CONCAT('NAME:', lower(trim(staff_name)))
+                        END
+                    ) STORED,
+    weapon_key       VARCHAR(300) GENERATED ALWAYS AS (
+                        CASE
+                            WHEN weapon_id IS NOT NULL THEN CONCAT('ID:', weapon_id)
+                            ELSE CONCAT('NAME:', lower(trim(weapon_name)))
+                        END
+                    ) STORED,
+    assigned_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE,
+    FOREIGN KEY (weapon_id) REFERENCES weapons(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_staff_weapons_assignment (staff_key, weapon_key),
+    CHECK (
+        staff_id IS NOT NULL OR (staff_name IS NOT NULL AND length(trim(staff_name)) > 0)
+    ),
+    CHECK (
+        weapon_id IS NOT NULL OR (weapon_name IS NOT NULL AND length(trim(weapon_name)) > 0)
+    )
+);
+
+CREATE TABLE IF NOT EXISTS staff_vehicles (
+    id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    staff_id         BIGINT UNSIGNED NULL,
+    staff_name       VARCHAR(255) NULL,
+    vehicle_id       BIGINT UNSIGNED NULL,
+    vehicle_name     VARCHAR(255) NULL,
+    staff_key        VARCHAR(300) GENERATED ALWAYS AS (
+                        CASE
+                            WHEN staff_id IS NOT NULL THEN CONCAT('ID:', staff_id)
+                            ELSE CONCAT('NAME:', lower(trim(staff_name)))
+                        END
+                    ) STORED,
+    vehicle_key      VARCHAR(300) GENERATED ALWAYS AS (
+                        CASE
+                            WHEN vehicle_id IS NOT NULL THEN CONCAT('ID:', vehicle_id)
+                            ELSE CONCAT('NAME:', lower(trim(vehicle_name)))
+                        END
+                    ) STORED,
+    assigned_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE,
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_staff_vehicles_assignment (staff_key, vehicle_key),
+    CHECK (
+        staff_id IS NOT NULL OR (staff_name IS NOT NULL AND length(trim(staff_name)) > 0)
+    ),
+    CHECK (
+        vehicle_id IS NOT NULL OR (vehicle_name IS NOT NULL AND length(trim(vehicle_name)) > 0)
+    )
+);
+
+CREATE TABLE IF NOT EXISTS staff_tech_equipment (
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    staff_id             BIGINT UNSIGNED NULL,
+    staff_name           VARCHAR(255) NULL,
+    tech_equipment_id    BIGINT UNSIGNED NULL,
+    tech_equipment_name  VARCHAR(255) NULL,
+    staff_key            VARCHAR(300) GENERATED ALWAYS AS (
+                            CASE
+                                WHEN staff_id IS NOT NULL THEN CONCAT('ID:', staff_id)
+                                ELSE CONCAT('NAME:', lower(trim(staff_name)))
+                            END
+                        ) STORED,
+    tech_equipment_key   VARCHAR(300) GENERATED ALWAYS AS (
+                            CASE
+                                WHEN tech_equipment_id IS NOT NULL THEN CONCAT('ID:', tech_equipment_id)
+                                ELSE CONCAT('NAME:', lower(trim(tech_equipment_name)))
+                            END
+                        ) STORED,
+    assigned_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE,
+    FOREIGN KEY (tech_equipment_id) REFERENCES tech_equipment(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_staff_tech_equipment_assignment (staff_key, tech_equipment_key),
+    CHECK (
+        staff_id IS NOT NULL OR (staff_name IS NOT NULL AND length(trim(staff_name)) > 0)
+    ),
+    CHECK (
+        tech_equipment_id IS NOT NULL OR (tech_equipment_name IS NOT NULL AND length(trim(tech_equipment_name)) > 0)
+    )
+);
+
 
 -- ============================================================================
 -- ============================================================================
@@ -445,14 +591,35 @@ CREATE INDEX idx_materials_classification ON materials(classification);
 -- Note: Passwords should be bcrypt-hashed in production. The values below are
 -- placeholder hashes for illustration only.
 INSERT INTO users (username, email, password, full_name, role, status) VALUES
-    ('admin', 'thanhpxd49@gmail.com', '$2b$10$5s0AEt6NNwaZZ0IL5g7GPunT33kSeEQykpsmbgomQwsdeTeQNfs7K', 'Quản Trị Viên', 'admin', 'approved'),
-    ('nvkt01', 'nvkt01@quanlykythuat.vn', '$2b$10$examplehashforpassword1234567890abcde', 'Nguyễn Văn An', 'user', 'approved'),
-    ('nvkt02', 'nvkt02@quanlykythuat.vn', '$2b$10$examplehashforpassword1234567890abcde', 'Trần Thị Bình', 'readonly', 'approved');
+    (
+        'admin',
+        'thanhpxd49@gmail.com',
+        '$2b$10$5s0AEt6NNwaZZ0IL5g7GPunT33kSeEQykpsmbgomQwsdeTeQNfs7K',
+        'Quản Trị Viên',
+        'admin',
+        'approved'
+    ),
+    (
+        'nvkt01',
+        'nvkt01@quanlykythuat.vn',
+        '$2b$10$examplehashforpassword1234567890abcde',
+        'Nguyễn Văn An',
+        'user',
+        'approved'
+    ),
+    (
+        'nvkt02',
+        'nvkt02@quanlykythuat.vn',
+        '$2b$10$examplehashforpassword1234567890abcde',
+        'Trần Thị Bình',
+        'readonly',
+        'approved'
+    );
 
 -- ============================================================================
 -- Sample Unit Info
 -- ============================================================================
-UPDATE unit_info SET
+UPDATE unit_infos SET
     unit_name = 'TRUNG TÂM CÔNG NGHỆ XỬ LÝ BOM MÌN',
     technical_officer = 'Đại tá Nguyễn Văn Hùng',
     statistician = 'Thiếu tá Trần Văn Minh'
@@ -461,7 +628,7 @@ WHERE id = 1;
 -- ============================================================================
 -- Sample Overview
 -- ============================================================================
-UPDATE overview SET
+UPDATE overviews SET
     position = 'Phường Tân Bình, Thành phố Hà Nội',
     area = '5000 m²',
     warehouse_system = 'Hệ thống 5 kho chứa vật tư và trang thiết bị',
@@ -475,15 +642,79 @@ WHERE id = 1;
 -- ============================================================================
 -- Sample Staff (Danh sách cán bộ kỹ thuật)
 -- ============================================================================
-INSERT INTO staff (full_name, date_of_birth, id_number, rank, position, unit_department, education, assigned_warehouse, assigned_weapons, assigned_vehicles, assigned_equipment) VALUES
-    ('Nguyễn Văn Hùng', '1975-03-15', 'QĐ-001234', 'Đại tá', 'Giám đốc Trung tâm', 'Cụm bộ', 'Đại học', 'Kho A1', 'Súng AK-47, Súng K54', 'Xe Toyota Land Cruiser', 'Máy dò mìn AN-19/2'),
-    ('Trần Văn Minh', '1980-07-22', 'QĐ-002345', 'Thiếu tá', 'Phó Giám đốc', 'Cụm bộ', 'Thạc sĩ', 'Kho A2', 'Súng AK-47', 'Xe Hyundai HD72', 'Máy rà phá bom mìn'),
-    ('Lê Thị Hoa', '1985-11-08', 'QĐ-003456', 'Đại úy', 'Trưởng phòng Kỹ thuật', 'Đội Dò tìm', 'Đại học', 'Kho B1', 'Súng K54', '', 'Thiết bị đo từ trường'),
-    ('Phạm Đức Anh', '1988-05-30', 'QĐ-004567', 'Thượng uý', 'Nhân viên kỹ thuật', 'Đội Dò tìm', 'Cao đẳng', '', 'Súng AK-47', 'Xe tải Isuzu', ''),
-    ('Hoàng Minh Tuấn', '1990-01-12', 'QĐ-005678', 'Trung úy', 'Thủ kho', 'Trạm xử lý', 'Trung cấp', 'Kho C1', '', '', 'Thiết bị kiểm định'),
-    ('Vũ Thị Lan', '1992-09-25', 'QĐ-006789', 'Thiếu úy', 'Nhân viên thống kê', 'Cụm bộ', 'Đại học', '', '', '', ''),
-    ('Đỗ Quang Hải', '1983-04-18', 'QĐ-007890', 'Trung tá', 'Đội trưởng Đội Dò tìm', 'Đội Dò tìm', 'Đại học', 'Kho A1, Kho B1', 'Súng AK-47, Súng M16', 'Xe Toyota Hilux', 'Máy dò mìn, Thiết bị GPS'),
-    ('Bùi Văn Nam', '1987-12-05', 'QĐ-008901', 'Đại úy CN', 'Kỹ sư cơ khí', 'Trạm xử lý', 'Đại học', 'Kho C1', '', 'Xe cần cẩu', 'Máy hàn, Máy tiện');
+INSERT INTO staff (full_name, date_of_birth, id_number, rank_id, position, unit_department, education_id) VALUES
+    (
+        'Nguyễn Văn Hùng',
+        '1975-03-15',
+        'QĐ-001234',
+        (SELECT id FROM enum_constants WHERE type = 'staff_rank' AND enum = 'Đại tá'),
+        'Giám đốc Trung tâm',
+        'Cụm bộ',
+        (SELECT id FROM enum_constants WHERE type = 'staff_education' AND enum = 'Đại học')
+    ),
+    (
+        'Trần Văn Minh',
+        '1980-07-22',
+        'QĐ-002345',
+        (SELECT id FROM enum_constants WHERE type = 'staff_rank' AND enum = 'Thiếu tá'),
+        'Phó Giám đốc',
+        'Cụm bộ',
+        (SELECT id FROM enum_constants WHERE type = 'staff_education' AND enum = 'Thạc sĩ')
+    ),
+    (
+        'Lê Thị Hoa',
+        '1985-11-08',
+        'QĐ-003456',
+        (SELECT id FROM enum_constants WHERE type = 'staff_rank' AND enum = 'Đại úy'),
+        'Trưởng phòng Kỹ thuật',
+        'Đội Dò tìm',
+        (SELECT id FROM enum_constants WHERE type = 'staff_education' AND enum = 'Đại học')
+    ),
+    (
+        'Phạm Đức Anh',
+        '1988-05-30',
+        'QĐ-004567',
+        (SELECT id FROM enum_constants WHERE type = 'staff_rank' AND enum = 'Thượng uý'),
+        'Nhân viên kỹ thuật',
+        'Đội Dò tìm',
+        (SELECT id FROM enum_constants WHERE type = 'staff_education' AND enum = 'Cao đẳng')
+    ),
+    (
+        'Hoàng Minh Tuấn',
+        '1990-01-12',
+        'QĐ-005678',
+        (SELECT id FROM enum_constants WHERE type = 'staff_rank' AND enum = 'Trung úy'),
+        'Thủ kho',
+        'Trạm xử lý',
+        (SELECT id FROM enum_constants WHERE type = 'staff_education' AND enum = 'Trung cấp')
+    ),
+    (
+        'Vũ Thị Lan',
+        '1992-09-25',
+        'QĐ-006789',
+        (SELECT id FROM enum_constants WHERE type = 'staff_rank' AND enum = 'Thiếu úy'),
+        'Nhân viên thống kê',
+        'Cụm bộ',
+        (SELECT id FROM enum_constants WHERE type = 'staff_education' AND enum = 'Đại học')
+    ),
+    (
+        'Đỗ Quang Hải',
+        '1983-04-18',
+        'QĐ-007890',
+        (SELECT id FROM enum_constants WHERE type = 'staff_rank' AND enum = 'Trung tá'),
+        'Đội trưởng Đội Dò tìm',
+        'Đội Dò tìm',
+        (SELECT id FROM enum_constants WHERE type = 'staff_education' AND enum = 'Đại học')
+    ),
+    (
+        'Bùi Văn Nam',
+        '1987-12-05',
+        'QĐ-008901',
+        (SELECT id FROM enum_constants WHERE type = 'staff_rank' AND enum = 'Đại úy CN'),
+        'Kỹ sư cơ khí',
+        'Trạm xử lý',
+        (SELECT id FROM enum_constants WHERE type = 'staff_education' AND enum = 'Đại học')
+    );
 
 -- ============================================================================
 -- Sample Warehouses (Kho/Trạm/Xưởng)
@@ -498,12 +729,12 @@ INSERT INTO warehouses (code, function_desc, keeper, managing_unit, area, constr
 -- ============================================================================
 -- Sample Warehouse Images
 -- ============================================================================
-INSERT INTO warehouse_images (warehouse_id, file_path, file_type, description) VALUES
-    (1, '/uploads/warehouses/kho-a1-front.jpg', 'image/jpeg', 'Mặt trước Kho A1'),
-    (1, '/uploads/warehouses/kho-a1-inside.png', 'image/png', 'Bên trong Kho A1'),
-    (2, '/uploads/warehouses/kho-a2-overview.jpg', 'image/jpeg', 'Tổng quan Kho A2'),
-    (3, '/uploads/warehouses/kho-b1-equipment.jpg', 'image/jpeg', 'Khu vực thiết bị Kho B1'),
-    (5, '/uploads/warehouses/tram-t1-workshop.jpg', 'image/jpeg', 'Xưởng sửa chữa T1');
+INSERT INTO warehouse_images (warehouse_id, file_path, file_type_id, description) VALUES
+    (1, '/uploads/warehouses/kho-a1-front.jpg', (SELECT id FROM enum_constants WHERE type = 'warehouse_image_file_type' AND enum = 'image/jpeg'), 'Mặt trước Kho A1'),
+    (1, '/uploads/warehouses/kho-a1-inside.png', (SELECT id FROM enum_constants WHERE type = 'warehouse_image_file_type' AND enum = 'image/png'), 'Bên trong Kho A1'),
+    (2, '/uploads/warehouses/kho-a2-overview.jpg', (SELECT id FROM enum_constants WHERE type = 'warehouse_image_file_type' AND enum = 'image/jpeg'), 'Tổng quan Kho A2'),
+    (3, '/uploads/warehouses/kho-b1-equipment.jpg', (SELECT id FROM enum_constants WHERE type = 'warehouse_image_file_type' AND enum = 'image/jpeg'), 'Khu vực thiết bị Kho B1'),
+    (5, '/uploads/warehouses/tram-t1-workshop.jpg', (SELECT id FROM enum_constants WHERE type = 'warehouse_image_file_type' AND enum = 'image/jpeg'), 'Xưởng sửa chữa T1');
 
 -- ============================================================================
 -- Sample Warehouse Equipment (Trang bị vật tư trong kho)
@@ -587,25 +818,130 @@ INSERT INTO weapons (name, classification, unit_measure, quantity, country, year
 -- ============================================================================
 -- Sample Tech Equipment (Trang thiết bị kỹ thuật)
 -- ============================================================================
-INSERT INTO tech_equipment (name, classification, unit_measure, quantity, country, year, allocation, repair, operating_hours) VALUES
-    ('Máy dò mìn AN-19/2', 'Cấp 1', 'Bộ', 5, 'Nga', 2015, 5, '', 1250.5),
-    ('Máy rà phá bom mìn cầm tay CEIA MIL-D1', 'Cấp 1', 'Bộ', 3, 'Ý', 2019, 3, '', 890.0),
-    ('Thiết bị đo từ trường Geometrics G-858', 'Cấp 1', 'Bộ', 2, 'Mỹ', 2020, 2, 'Đang sửa', 450.0),
-    ('Thiết bị GPS cầm tay Garmin 66sr', 'Cấp 2', 'Chiếc', 10, 'Mỹ', 2022, 10, '', 2100.0),
-    ('Máy phát điện Honda EU22i', 'Cấp 2', 'Chiếc', 4, 'Nhật Bản', 2021, 4, '', 3500.0),
-    ('Thiết bị kiểm định chất lượng QC-100', 'Cấp 2', 'Bộ', 2, 'Hàn Quốc', 2023, 2, '', 120.0),
-    ('Máy bơm nước Pentax', 'Cấp 3', 'Chiếc', 3, 'Ý', 2018, 3, 'Đã sửa', 5200.0);
+INSERT INTO tech_equipment (name, classification, unit_measure, quantity, country, year, allocation, repair_id, operating_hours) VALUES
+    ('Máy dò mìn AN-19/2', 'Cấp 1', 'Bộ', 5, 'Nga', 2015, 5, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 1250.5),
+    ('Máy rà phá bom mìn cầm tay CEIA MIL-D1', 'Cấp 1', 'Bộ', 3, 'Ý', 2019, 3, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 890.0),
+    ('Thiết bị đo từ trường Geometrics G-858', 'Cấp 1', 'Bộ', 2, 'Mỹ', 2020, 2, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = 'Đang sửa'), 450.0),
+    ('Thiết bị GPS cầm tay Garmin 66sr', 'Cấp 2', 'Chiếc', 10, 'Mỹ', 2022, 10, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 2100.0),
+    ('Máy phát điện Honda EU22i', 'Cấp 2', 'Chiếc', 4, 'Nhật Bản', 2021, 4, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 3500.0),
+    ('Thiết bị kiểm định chất lượng QC-100', 'Cấp 2', 'Bộ', 2, 'Hàn Quốc', 2023, 2, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 120.0),
+    ('Máy bơm nước Pentax', 'Cấp 3', 'Chiếc', 3, 'Ý', 2018, 3, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = 'Đã sửa'), 5200.0);
 
 -- ============================================================================
 -- Sample Vehicles (Phương tiện)
 -- ============================================================================
-INSERT INTO vehicles (name, classification, brand, vehicle_type, country, year, allocation, repair, operating_hours, km) VALUES
-    ('Toyota Land Cruiser 76', 'Cấp 1', 'Toyota', 'Ô tô', 'Nhật Bản', 2018, 1, '', 2500.0, 45000.0),
-    ('Hyundai HD72 tải nhẹ', 'Cấp 2', 'Hyundai', 'Xe tải', 'Hàn Quốc', 2019, 1, '', 3200.0, 62000.0),
-    ('Isuzu NQR75LE', 'Cấp 2', 'Isuzu', 'Xe tải', 'Nhật Bản', 2017, 1, 'Đang sửa', 4100.0, 78000.0),
-    ('Toyota Hilux 2.4L', 'Cấp 1', 'Toyota', 'Ô tô', 'Thái Lan', 2021, 1, '', 1800.0, 32000.0),
-    ('Xe cần cẩu Tadano TM-ZE364MH', 'Cấp 1', 'Tadano', 'Xe chuyên dụng', 'Nhật Bản', 2016, 1, '', 1500.0, 25000.0),
-    ('Xe máy Honda Wave RSX', 'Cấp 3', 'Honda', 'Xe máy', 'Việt Nam', 2022, 3, '', 800.0, 15000.0);
+INSERT INTO vehicles (name, classification, brand, vehicle_type, country, year, allocation, repair_id, operating_hours, km) VALUES
+    ('Toyota Land Cruiser 76', 'Cấp 1', 'Toyota', 'Ô tô', 'Nhật Bản', 2018, 1, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 2500.0, 45000.0),
+    ('Hyundai HD72 tải nhẹ', 'Cấp 2', 'Hyundai', 'Xe tải', 'Hàn Quốc', 2019, 1, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 3200.0, 62000.0),
+    ('Isuzu NQR75LE', 'Cấp 2', 'Isuzu', 'Xe tải', 'Nhật Bản', 2017, 1, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = 'Đang sửa'), 4100.0, 78000.0),
+    ('Toyota Hilux 2.4L', 'Cấp 1', 'Toyota', 'Ô tô', 'Thái Lan', 2021, 1, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 1800.0, 32000.0),
+    ('Xe cần cẩu Tadano TM-ZE364MH', 'Cấp 1', 'Tadano', 'Xe chuyên dụng', 'Nhật Bản', 2016, 1, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 1500.0, 25000.0),
+    ('Xe máy Honda Wave RSX', 'Cấp 3', 'Honda', 'Xe máy', 'Việt Nam', 2022, 3, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 800.0, 15000.0);
+
+-- ============================================================================
+-- Sample Staff Assignments (Many-to-many mapping)
+-- ============================================================================
+INSERT INTO staff_warehouses (staff_id, warehouse_id)
+SELECT s.id, w.id
+FROM staff s
+JOIN warehouses w ON w.code IN ('Kho A1', 'Kho B1')
+WHERE s.id_number = 'QĐ-007890';
+
+INSERT INTO staff_warehouses (staff_id, warehouse_id)
+SELECT s.id, w.id
+FROM staff s
+JOIN warehouses w ON w.code = 'Kho A1'
+WHERE s.id_number = 'QĐ-001234';
+
+INSERT INTO staff_warehouses (staff_id, warehouse_id)
+SELECT s.id, w.id
+FROM staff s
+JOIN warehouses w ON w.code = 'Kho A2'
+WHERE s.id_number = 'QĐ-002345';
+
+INSERT INTO staff_warehouses (staff_id, warehouse_id)
+SELECT s.id, w.id
+FROM staff s
+JOIN warehouses w ON w.code = 'Kho B1'
+WHERE s.id_number = 'QĐ-003456';
+
+INSERT INTO staff_warehouses (staff_id, warehouse_id)
+SELECT s.id, w.id
+FROM staff s
+JOIN warehouses w ON w.code = 'Kho C1'
+WHERE s.id_number IN ('QĐ-005678', 'QĐ-008901');
+
+INSERT INTO staff_weapons (staff_id, weapon_id)
+SELECT s.id, w.id
+FROM staff s
+JOIN weapons w ON w.name LIKE '%AK-47%'
+WHERE s.id_number IN ('QĐ-001234', 'QĐ-002345', 'QĐ-004567', 'QĐ-007890');
+
+INSERT INTO staff_weapons (staff_id, weapon_id)
+SELECT s.id, w.id
+FROM staff s
+JOIN weapons w ON w.name LIKE '%K54%'
+WHERE s.id_number IN ('QĐ-001234', 'QĐ-003456');
+
+INSERT INTO staff_weapons (staff_id, weapon_id)
+SELECT s.id, w.id
+FROM staff s
+JOIN weapons w ON w.name LIKE '%M16A2%'
+WHERE s.id_number = 'QĐ-007890';
+
+INSERT INTO staff_vehicles (staff_id, vehicle_id)
+SELECT s.id, v.id
+FROM staff s
+JOIN vehicles v ON v.name LIKE '%Land Cruiser%'
+WHERE s.id_number = 'QĐ-001234';
+
+INSERT INTO staff_vehicles (staff_id, vehicle_id)
+SELECT s.id, v.id
+FROM staff s
+JOIN vehicles v ON v.name LIKE '%HD72%'
+WHERE s.id_number = 'QĐ-002345';
+
+INSERT INTO staff_vehicles (staff_id, vehicle_id)
+SELECT s.id, v.id
+FROM staff s
+JOIN vehicles v ON v.name LIKE '%NQR75LE%'
+WHERE s.id_number = 'QĐ-004567';
+
+INSERT INTO staff_vehicles (staff_id, vehicle_id)
+SELECT s.id, v.id
+FROM staff s
+JOIN vehicles v ON v.name LIKE '%Hilux%'
+WHERE s.id_number = 'QĐ-007890';
+
+INSERT INTO staff_vehicles (staff_id, vehicle_id)
+SELECT s.id, v.id
+FROM staff s
+JOIN vehicles v ON v.name LIKE '%Tadano%'
+WHERE s.id_number = 'QĐ-008901';
+
+INSERT INTO staff_tech_equipment (staff_id, tech_equipment_id)
+SELECT s.id, t.id
+FROM staff s
+JOIN tech_equipment t ON t.name LIKE '%AN-19/2%'
+WHERE s.id_number IN ('QĐ-001234', 'QĐ-007890');
+
+INSERT INTO staff_tech_equipment (staff_id, tech_equipment_id)
+SELECT s.id, t.id
+FROM staff s
+JOIN tech_equipment t ON t.name LIKE '%CEIA MIL-D1%'
+WHERE s.id_number = 'QĐ-002345';
+
+INSERT INTO staff_tech_equipment (staff_id, tech_equipment_id)
+SELECT s.id, t.id
+FROM staff s
+JOIN tech_equipment t ON t.name LIKE '%Geometrics G-858%'
+WHERE s.id_number = 'QĐ-003456';
+
+INSERT INTO staff_tech_equipment (staff_id, tech_equipment_id)
+SELECT s.id, t.id
+FROM staff s
+JOIN tech_equipment t ON t.name LIKE '%QC-100%'
+WHERE s.id_number = 'QĐ-005678';
 
 -- ============================================================================
 -- Sample Materials (Vật tư)

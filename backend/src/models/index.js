@@ -1,6 +1,15 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
+// ─── enum_constants ───────────────────────────────────────────────────────────
+const enum_constants = sequelize.define('enum_constants', {
+  id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
+  enum: { type: DataTypes.STRING(255), allowNull: false },
+  type: { type: DataTypes.STRING(100), allowNull: false },
+  created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+}, { tableName: 'enum_constants', timestamps: false });
+
+// ─── users ────────────────────────────────────────────────────────────────────
 const users = sequelize.define('users', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   username: { type: DataTypes.STRING(255), unique: true, allowNull: false },
@@ -9,16 +18,18 @@ const users = sequelize.define('users', {
   full_name: { type: DataTypes.STRING(255), allowNull: false },
   role: { type: DataTypes.ENUM('admin', 'user', 'readonly'), allowNull: false, defaultValue: 'user' },
   status: { type: DataTypes.ENUM('pending', 'approved'), allowNull: false, defaultValue: 'pending' },
-}, { underscored: true });
+}, { tableName: 'users', underscored: true });
 
-const unit_info = sequelize.define('unit_info', {
+// ─── unit_infos ───────────────────────────────────────────────────────────────
+const unit_infos = sequelize.define('unit_infos', {
   id: { type: DataTypes.TINYINT.UNSIGNED, primaryKey: true, defaultValue: 1 },
   unit_name: { type: DataTypes.STRING(255), allowNull: false, defaultValue: 'TRUNG TÂM CÔNG NGHỆ XỬ LÝ BOM MÌN' },
   technical_officer: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   statistician: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-}, { timestamps: false });
+}, { tableName: 'unit_infos', timestamps: false });
 
-const overview = sequelize.define('overview', {
+// ─── overviews ────────────────────────────────────────────────────────────────
+const overviews = sequelize.define('overviews', {
   id: { type: DataTypes.TINYINT.UNSIGNED, primaryKey: true, defaultValue: 1 },
   position: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   area: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
@@ -28,23 +39,22 @@ const overview = sequelize.define('overview', {
   fire_system: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   terrain_map: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   land_certificate: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-}, { timestamps: false });
+}, { tableName: 'overviews', timestamps: false });
 
-const staff = sequelize.define('staff', {
+// ─── staffs ───────────────────────────────────────────────────────────────────
+// rank_id and education_id reference enum_constants
+const staffs = sequelize.define('staffs', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   full_name: { type: DataTypes.STRING(255), allowNull: false },
-  date_of_birth: { type: DataTypes.DATEONLY },
+  date_of_birth: { type: DataTypes.DATEONLY, allowNull: true },
   id_number: { type: DataTypes.STRING(255), allowNull: false },
-  rank: { type: DataTypes.STRING(255), allowNull: false },
+  rank_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
   position: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   unit_department: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-  education: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-  assigned_warehouse: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-  assigned_weapons: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-  assigned_vehicles: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-  assigned_equipment: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-}, { underscored: true });
+  education_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+}, { tableName: 'staffs', underscored: true });
 
+// ─── warehouses ───────────────────────────────────────────────────────────────
 const warehouses = sequelize.define('warehouses', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   code: { type: DataTypes.STRING(255), allowNull: false },
@@ -54,18 +64,20 @@ const warehouses = sequelize.define('warehouses', {
   area: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   construction_date: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   notes: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-}, { underscored: true });
+}, { tableName: 'warehouses', underscored: true });
 
+// ─── warehouse sub-tables ─────────────────────────────────────────────────────
+// file_type_id references enum_constants (warehouse_image_file_type)
 const warehouse_images = sequelize.define('warehouse_images', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   warehouse_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
   file_path: { type: DataTypes.STRING(255), allowNull: false },
-  file_type: { type: DataTypes.STRING(255), allowNull: false, defaultValue: 'image/jpeg' },
+  file_type_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
   description: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   uploaded_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
-}, { timestamps: false });
+}, { tableName: 'warehouse_images', timestamps: false });
 
-const warehouse_equipment = sequelize.define('warehouse_equipment', {
+const warehouse_equipments = sequelize.define('warehouse_equipments', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   warehouse_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
   name: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
@@ -74,7 +86,7 @@ const warehouse_equipment = sequelize.define('warehouse_equipment', {
   certification: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   maintenance: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   import_export: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-}, { timestamps: false });
+}, { tableName: 'warehouse_equipments', timestamps: false });
 
 const warehouse_inspections = sequelize.define('warehouse_inspections', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
@@ -86,9 +98,9 @@ const warehouse_inspections = sequelize.define('warehouse_inspections', {
   evaluation: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   requirements: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   server_name: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-}, { timestamps: false });
+}, { tableName: 'warehouse_inspections', timestamps: false });
 
-const warehouse_access = sequelize.define('warehouse_access', {
+const warehouse_accesses = sequelize.define('warehouse_accesses', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   warehouse_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
   date: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
@@ -98,9 +110,9 @@ const warehouse_access = sequelize.define('warehouse_access', {
   responsible_person: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   time_in: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   time_out: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-}, { timestamps: false });
+}, { tableName: 'warehouse_accesses', timestamps: false });
 
-const warehouse_handover = sequelize.define('warehouse_handover', {
+const warehouse_handovers = sequelize.define('warehouse_handovers', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   warehouse_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
   equipment_name: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
@@ -115,7 +127,7 @@ const warehouse_handover = sequelize.define('warehouse_handover', {
   return_quantity: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   return_giver: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   return_receiver: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-}, { timestamps: false });
+}, { tableName: 'warehouse_handovers', timestamps: false });
 
 const warehouse_exports = sequelize.define('warehouse_exports', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
@@ -130,7 +142,7 @@ const warehouse_exports = sequelize.define('warehouse_exports', {
   unit_price: { type: DataTypes.DECIMAL(15, 2), allowNull: false, defaultValue: 0 },
   total_price: { type: DataTypes.DECIMAL(15, 2), allowNull: false, defaultValue: 0 },
   notes: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-}, { timestamps: false });
+}, { tableName: 'warehouse_exports', timestamps: false });
 
 const warehouse_imports = sequelize.define('warehouse_imports', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
@@ -145,9 +157,9 @@ const warehouse_imports = sequelize.define('warehouse_imports', {
   unit_price: { type: DataTypes.DECIMAL(15, 2), allowNull: false, defaultValue: 0 },
   total_price: { type: DataTypes.DECIMAL(15, 2), allowNull: false, defaultValue: 0 },
   notes: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-}, { timestamps: false });
+}, { tableName: 'warehouse_imports', timestamps: false });
 
-const warehouse_lightning = sequelize.define('warehouse_lightning', {
+const warehouse_lightnings = sequelize.define('warehouse_lightnings', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   warehouse_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
   date: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
@@ -163,8 +175,9 @@ const warehouse_lightning = sequelize.define('warehouse_lightning', {
   direct_rod3_result: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   induction_rdo: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   induction_result: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-}, { timestamps: false });
+}, { tableName: 'warehouse_lightnings', timestamps: false });
 
+// ─── weapons ──────────────────────────────────────────────────────────────────
 const weapons = sequelize.define('weapons', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   name: { type: DataTypes.STRING(255), allowNull: false },
@@ -172,24 +185,28 @@ const weapons = sequelize.define('weapons', {
   unit_measure: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   quantity: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   country: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-  year: { type: DataTypes.INTEGER },
+  year: { type: DataTypes.INTEGER, allowNull: true },
   assigned_unit: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   assigned_individual: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-}, { underscored: true });
+}, { tableName: 'weapons', underscored: true });
 
-const tech_equipment = sequelize.define('tech_equipment', {
+// ─── tech_equipments ─────────────────────────────────────────────────────────
+// repair_id references enum_constants (repair_status)
+const tech_equipments = sequelize.define('tech_equipments', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   name: { type: DataTypes.STRING(255), allowNull: false },
   classification: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   unit_measure: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   quantity: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   country: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-  year: { type: DataTypes.INTEGER },
+  year: { type: DataTypes.INTEGER, allowNull: true },
   allocation: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-  repair: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
+  repair_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
   operating_hours: { type: DataTypes.DECIMAL(15, 2), allowNull: false, defaultValue: 0 },
-}, { underscored: true });
+}, { tableName: 'tech_equipments', underscored: true });
 
+// ─── vehicles ────────────────────────────────────────────────────────────────
+// repair_id references enum_constants (repair_status)
 const vehicles = sequelize.define('vehicles', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   name: { type: DataTypes.STRING(255), allowNull: false },
@@ -197,13 +214,14 @@ const vehicles = sequelize.define('vehicles', {
   brand: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   vehicle_type: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   country: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-  year: { type: DataTypes.INTEGER },
+  year: { type: DataTypes.INTEGER, allowNull: true },
   allocation: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-  repair: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
+  repair_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
   operating_hours: { type: DataTypes.DECIMAL(15, 2), allowNull: false, defaultValue: 0 },
   km: { type: DataTypes.DECIMAL(15, 2), allowNull: false, defaultValue: 0 },
-}, { underscored: true });
+}, { tableName: 'vehicles', underscored: true });
 
+// ─── materials ───────────────────────────────────────────────────────────────
 const materials = sequelize.define('materials', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   name: { type: DataTypes.STRING(255), allowNull: false },
@@ -211,43 +229,121 @@ const materials = sequelize.define('materials', {
   unit_measure: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   quantity: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   country: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
-  year: { type: DataTypes.INTEGER },
+  year: { type: DataTypes.INTEGER, allowNull: true },
   assigned_unit: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   assigned_individual: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-}, { underscored: true });
+}, { tableName: 'materials', underscored: true });
 
-const models = {
-  users,
-  unit_info,
-  overview,
-  staff,
-  warehouses,
+// ─── staff assignment junction tables ────────────────────────────────────────
+// Generated columns (staff_key, *_key) are managed by MySQL and excluded here.
+
+const staff_warehouses = sequelize.define('staff_warehouses', {
+  id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
+  staff_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+  staff_name: { type: DataTypes.STRING(255), allowNull: true },
+  warehouse_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+  warehouse_code: { type: DataTypes.STRING(255), allowNull: true },
+  assigned_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+}, { tableName: 'staff_warehouses', timestamps: false });
+
+const staff_weapons = sequelize.define('staff_weapons', {
+  id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
+  staff_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+  staff_name: { type: DataTypes.STRING(255), allowNull: true },
+  weapon_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+  weapon_name: { type: DataTypes.STRING(255), allowNull: true },
+  assigned_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+}, { tableName: 'staff_weapons', timestamps: false });
+
+const staff_vehicles = sequelize.define('staff_vehicles', {
+  id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
+  staff_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+  staff_name: { type: DataTypes.STRING(255), allowNull: true },
+  vehicle_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+  vehicle_name: { type: DataTypes.STRING(255), allowNull: true },
+  assigned_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+}, { tableName: 'staff_vehicles', timestamps: false });
+
+const staff_tech_equipment = sequelize.define('staff_tech_equipment', {
+  id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
+  staff_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+  staff_name: { type: DataTypes.STRING(255), allowNull: true },
+  tech_equipment_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+  tech_equipment_name: { type: DataTypes.STRING(255), allowNull: true },
+  assigned_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+}, { tableName: 'staff_tech_equipment', timestamps: false });
+
+// ─── Associations ─────────────────────────────────────────────────────────────
+
+// staffs ← enum_constants (rank, education)
+staffs.belongsTo(enum_constants, { foreignKey: 'rank_id', as: 'rank' });
+staffs.belongsTo(enum_constants, { foreignKey: 'education_id', as: 'education' });
+
+// tech_equipments / vehicles / warehouse_images ← enum_constants
+tech_equipments.belongsTo(enum_constants, { foreignKey: 'repair_id', as: 'repair' });
+vehicles.belongsTo(enum_constants, { foreignKey: 'repair_id', as: 'repair' });
+warehouse_images.belongsTo(enum_constants, { foreignKey: 'file_type_id', as: 'file_type' });
+
+// warehouses → sub-tables (cascade delete)
+const warehouseChildren = [
   warehouse_images,
-  warehouse_equipment,
+  warehouse_equipments,
   warehouse_inspections,
-  warehouse_access,
-  warehouse_handover,
+  warehouse_accesses,
+  warehouse_handovers,
   warehouse_exports,
   warehouse_imports,
-  warehouse_lightning,
-  weapons,
-  tech_equipment,
-  vehicles,
-  materials,
-};
-
-[
-  warehouse_images,
-  warehouse_equipment,
-  warehouse_inspections,
-  warehouse_access,
-  warehouse_handover,
-  warehouse_exports,
-  warehouse_imports,
-  warehouse_lightning,
-].forEach((model) => {
+  warehouse_lightnings,
+];
+warehouseChildren.forEach((model) => {
   warehouses.hasMany(model, { foreignKey: 'warehouse_id', onDelete: 'CASCADE' });
   model.belongsTo(warehouses, { foreignKey: 'warehouse_id' });
 });
+
+// staffs ↔ entities via junction tables
+staffs.hasMany(staff_warehouses, { foreignKey: 'staff_id' });
+staff_warehouses.belongsTo(staffs, { foreignKey: 'staff_id' });
+warehouses.hasMany(staff_warehouses, { foreignKey: 'warehouse_id' });
+staff_warehouses.belongsTo(warehouses, { foreignKey: 'warehouse_id' });
+
+staffs.hasMany(staff_weapons, { foreignKey: 'staff_id' });
+staff_weapons.belongsTo(staffs, { foreignKey: 'staff_id' });
+weapons.hasMany(staff_weapons, { foreignKey: 'weapon_id' });
+staff_weapons.belongsTo(weapons, { foreignKey: 'weapon_id' });
+
+staffs.hasMany(staff_vehicles, { foreignKey: 'staff_id' });
+staff_vehicles.belongsTo(staffs, { foreignKey: 'staff_id' });
+vehicles.hasMany(staff_vehicles, { foreignKey: 'vehicle_id' });
+staff_vehicles.belongsTo(vehicles, { foreignKey: 'vehicle_id' });
+
+staffs.hasMany(staff_tech_equipment, { foreignKey: 'staff_id' });
+staff_tech_equipment.belongsTo(staffs, { foreignKey: 'staff_id' });
+tech_equipments.hasMany(staff_tech_equipment, { foreignKey: 'tech_equipment_id' });
+staff_tech_equipment.belongsTo(tech_equipments, { foreignKey: 'tech_equipment_id' });
+
+const models = {
+  users,
+  enum_constants,
+  unit_infos,
+  overviews,
+  staffs,
+  warehouses,
+  warehouse_images,
+  warehouse_equipments,
+  warehouse_inspections,
+  warehouse_accesses,
+  warehouse_handovers,
+  warehouse_exports,
+  warehouse_imports,
+  warehouse_lightnings,
+  weapons,
+  tech_equipments,
+  vehicles,
+  materials,
+  staff_warehouses,
+  staff_weapons,
+  staff_vehicles,
+  staff_tech_equipment,
+};
 
 module.exports = { sequelize, models };

@@ -1,5 +1,113 @@
-import { useState } from 'react';
-import { ENTITY_SCHEMAS, buildDefaultRow } from '../services/entitySchema';
+import { useState, useEffect } from "react";
+import { ENTITY_SCHEMAS, buildDefaultRow } from "../services/entitySchema";
+import { Api } from "../services/api";
+
+function EnumSelect({ enumType, value, onChange, credential }) {
+  const [options, setOptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newVal, setNewVal] = useState("");
+  const [addErr, setAddErr] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    Api.listEnumByType(enumType, credential)
+      .then((data) => {
+        if (active) setOptions(data.rows || []);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [enumType, credential]);
+
+  const handleAdd = async () => {
+    if (!newVal.trim()) return;
+    setSaving(true);
+    setAddErr("");
+    try {
+      const data = await Api.addEnumValue(enumType, newVal.trim(), credential);
+      setOptions((prev) => [...prev, data.row]);
+      onChange(String(data.row.id));
+      setNewVal("");
+      setShowAdd(false);
+    } catch (e) {
+      setAddErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="enum-select-wrap">
+      <div className="enum-select-row">
+        <select
+          className="form-select"
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={loading}
+        >
+          <option value="">-- Chọn --</option>
+          {options.map((opt) => (
+            <option key={opt.id} value={String(opt.id)}>
+              {opt.enum}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="btn btn-sm btn-outline enum-add-btn"
+          onClick={() => setShowAdd((v) => !v)}
+          title="Thêm giá trị mới"
+        >
+          +
+        </button>
+      </div>
+      {showAdd && (
+        <div className="enum-add-row">
+          <input
+            className="form-input"
+            value={newVal}
+            onChange={(e) => setNewVal(e.target.value)}
+            placeholder="Giá trị mới..."
+            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          />
+          <button
+            type="button"
+            className="btn btn-sm btn-success"
+            onClick={handleAdd}
+            disabled={saving || !newVal.trim()}
+          >
+            {saving ? "..." : "Lưu"}
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-secondary"
+            onClick={() => {
+              setShowAdd(false);
+              setNewVal("");
+              setAddErr("");
+            }}
+          >
+            Hủy
+          </button>
+        </div>
+      )}
+      {addErr && (
+        <div
+          className="error-msg"
+          style={{ fontSize: "0.8em", marginTop: "2px" }}
+        >
+          {addErr}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * A form for creating / editing entity rows.
@@ -14,12 +122,19 @@ import { ENTITY_SCHEMAS, buildDefaultRow } from '../services/entitySchema';
  *   onCancel    – () => void
  *   submitLabel – text on the submit button
  */
-export default function TableForm({ entity, initialData, onSubmit, onCancel, submitLabel = 'Lưu' }) {
+export default function TableForm({
+  entity,
+  initialData,
+  onSubmit,
+  onCancel,
+  submitLabel = "Lưu",
+  credential,
+}) {
   const schema = ENTITY_SCHEMAS[entity];
   const defaultFields = buildDefaultRow(entity);
 
   // Mode: 'table' or 'json'
-  const [mode, setMode] = useState('table');
+  const [mode, setMode] = useState("table");
 
   // Table-mode state: field values keyed by column key
   const [fields, setFields] = useState(() => {
@@ -27,7 +142,10 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
       // Merge initial data (skip id / auto fields)
       const merged = { ...defaultFields };
       for (const col of schema || []) {
-        if (initialData[col.key] !== undefined && initialData[col.key] !== null) {
+        if (
+          initialData[col.key] !== undefined &&
+          initialData[col.key] !== null
+        ) {
           merged[col.key] = String(initialData[col.key]);
         }
       }
@@ -46,19 +164,22 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
       delete copy.uploaded_at;
       return JSON.stringify(copy, null, 2);
     }
-    return '{}';
+    return "{}";
   });
 
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const resetForm = () => {
-    setError('');
-    setMode('table');
+    setError("");
+    setMode("table");
     setFields(() => {
       if (!initialData) return buildDefaultRow(entity);
       const merged = { ...buildDefaultRow(entity) };
       for (const col of schema || []) {
-        if (initialData[col.key] !== undefined && initialData[col.key] !== null) {
+        if (
+          initialData[col.key] !== undefined &&
+          initialData[col.key] !== null
+        ) {
           merged[col.key] = String(initialData[col.key]);
         }
       }
@@ -72,7 +193,7 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
       delete copy.uploaded_at;
       setJsonText(JSON.stringify(copy, null, 2));
     } else {
-      setJsonText('{}');
+      setJsonText("{}");
     }
   };
 
@@ -86,16 +207,20 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
   };
 
   const handleSubmit = () => {
-    setError('');
+    setError("");
     try {
       let payload;
-      if (mode === 'json') {
+      if (mode === "json") {
         payload = JSON.parse(jsonText);
       } else {
         payload = {};
         for (const col of schema || []) {
           const raw = fields[col.key];
-          if (col.type === 'number' && raw !== '' && raw !== undefined) {
+          if (
+            (col.type === "number" || col.type === "enum_select") &&
+            raw !== "" &&
+            raw !== undefined
+          ) {
             const num = Number(raw);
             if (Number.isNaN(num)) {
               setError(`"${col.label}" phải là số hợp lệ`);
@@ -103,7 +228,7 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
             }
             payload[col.key] = num;
           } else {
-            payload[col.key] = raw ?? '';
+            payload[col.key] = raw ?? "";
           }
         }
       }
@@ -120,16 +245,20 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
   // When switching modes, sync data between them
   const switchMode = (newMode) => {
     if (newMode === mode) return;
-    if (newMode === 'json') {
+    if (newMode === "json") {
       // Table → JSON: serialize current fields
       const obj = {};
       for (const col of schema || []) {
         const raw = fields[col.key];
-        if (col.type === 'number' && raw !== '' && raw !== undefined) {
+        if (
+          (col.type === "number" || col.type === "enum_select") &&
+          raw !== "" &&
+          raw !== undefined
+        ) {
           const n = Number(raw);
           obj[col.key] = Number.isNaN(n) ? raw : n;
         } else {
-          obj[col.key] = raw ?? '';
+          obj[col.key] = raw ?? "";
         }
       }
       setJsonText(JSON.stringify(obj, null, 2));
@@ -166,8 +295,14 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
         />
         {error && <div className="error-msg">{error}</div>}
         <div className="table-form-actions">
-          <button className="btn btn-sm btn-success" onClick={handleSubmit}>{submitLabel}</button>
-          {onCancel && <button className="btn btn-sm btn-secondary" onClick={handleCancel}>Hủy</button>}
+          <button className="btn btn-sm btn-success" onClick={handleSubmit}>
+            {submitLabel}
+          </button>
+          {onCancel && (
+            <button className="btn btn-sm btn-secondary" onClick={handleCancel}>
+              Hủy
+            </button>
+          )}
         </div>
       </div>
     );
@@ -179,53 +314,68 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
       <div className="table-form-header">
         <div className="mode-toggle">
           <button
-            className={`mode-toggle-btn ${mode === 'table' ? 'active' : ''}`}
-            onClick={() => switchMode('table')}
+            className={`mode-toggle-btn ${mode === "table" ? "active" : ""}`}
+            onClick={() => switchMode("table")}
             type="button"
           >
             📝 Biểu mẫu
           </button>
           <button
-            className={`mode-toggle-btn ${mode === 'json' ? 'active' : ''}`}
-            onClick={() => switchMode('json')}
+            className={`mode-toggle-btn ${mode === "json" ? "active" : ""}`}
+            onClick={() => switchMode("json")}
             type="button"
           >
-            {'{ } JSON'}
+            {"{ } JSON"}
           </button>
         </div>
       </div>
 
-      {mode === 'table' ? (
+      {mode === "table" ? (
         <div className="form-grid">
           {schema.map((col) => (
             <div className="form-field" key={col.key}>
               <label className="form-label">{col.label}</label>
-              {col.type === 'select' ? (
+              {col.type === "select" ? (
                 <select
                   className="form-select"
-                  value={fields[col.key] ?? ''}
+                  value={fields[col.key] ?? ""}
                   onChange={(e) => setField(col.key, e.target.value)}
                 >
                   {col.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
                   ))}
                 </select>
-              ) : col.type === 'textarea' ? (
+              ) : col.type === "enum_select" ? (
+                <EnumSelect
+                  enumType={col.enumType}
+                  value={fields[col.key] ?? ""}
+                  onChange={(v) => setField(col.key, v)}
+                  credential={credential}
+                />
+              ) : col.type === "textarea" ? (
                 <textarea
                   className="form-textarea"
-                  value={fields[col.key] ?? ''}
+                  value={fields[col.key] ?? ""}
                   onChange={(e) => setField(col.key, e.target.value)}
                   rows={3}
-                  placeholder={col.placeholder || ''}
+                  placeholder={col.placeholder || ""}
                 />
               ) : (
                 <input
                   className="form-input"
-                  type={col.type === 'number' ? 'number' : col.type === 'date' ? 'date' : 'text'}
-                  value={fields[col.key] ?? ''}
+                  type={
+                    col.type === "number"
+                      ? "number"
+                      : col.type === "date"
+                        ? "date"
+                        : "text"
+                  }
+                  value={fields[col.key] ?? ""}
                   onChange={(e) => setField(col.key, e.target.value)}
-                  placeholder={col.placeholder || ''}
-                  step={col.type === 'number' ? 'any' : undefined}
+                  placeholder={col.placeholder || ""}
+                  step={col.type === "number" ? "any" : undefined}
                 />
               )}
             </div>
@@ -240,11 +390,21 @@ export default function TableForm({ entity, initialData, onSubmit, onCancel, sub
         />
       )}
 
-      {error && <div className="error-msg" style={{ marginTop: '0.5rem' }}>{error}</div>}
+      {error && (
+        <div className="error-msg" style={{ marginTop: "0.5rem" }}>
+          {error}
+        </div>
+      )}
 
       <div className="table-form-actions">
-        <button className="btn btn-sm btn-success" onClick={handleSubmit}>{submitLabel}</button>
-        {onCancel && <button className="btn btn-sm btn-secondary" onClick={handleCancel}>Hủy</button>}
+        <button className="btn btn-sm btn-success" onClick={handleSubmit}>
+          {submitLabel}
+        </button>
+        {onCancel && (
+          <button className="btn btn-sm btn-secondary" onClick={handleCancel}>
+            Hủy
+          </button>
+        )}
       </div>
     </div>
   );

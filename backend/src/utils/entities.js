@@ -1,22 +1,27 @@
 const EDITABLE_BY_READONLY = false;
 
 const ENTITY_NAMES = [
-  'unit_info',
-  'overview',
-  'staff',
+  'enum_constants',
+  'unit_infos',
+  'overviews',
+  'staffs',
   'warehouses',
   'warehouse_images',
-  'warehouse_equipment',
+  'warehouse_equipments',
   'warehouse_inspections',
-  'warehouse_access',
-  'warehouse_handover',
+  'warehouse_accesses',
+  'warehouse_handovers',
   'warehouse_exports',
   'warehouse_imports',
-  'warehouse_lightning',
+  'warehouse_lightnings',
   'weapons',
-  'tech_equipment',
+  'tech_equipments',
   'vehicles',
   'materials',
+  'staff_warehouses',
+  'staff_weapons',
+  'staff_vehicles',
+  'staff_tech_equipment',
 ];
 
 module.exports = { ENTITY_NAMES, EDITABLE_BY_READONLY };

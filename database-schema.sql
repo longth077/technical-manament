@@ -64,14 +64,14 @@ CREATE TABLE IF NOT EXISTS users (
 -- ============================================================================
 -- 2. UNIT INFO (Thông tin đơn vị) - singleton row
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS unit_infoss (
+CREATE TABLE IF NOT EXISTS unit_infos (
     id                  TINYINT UNSIGNED NOT NULL DEFAULT 1 PRIMARY KEY CHECK (id = 1),
     unit_name           VARCHAR(255) NOT NULL DEFAULT 'TRUNG TÂM CÔNG NGHỆ XỬ LÝ BOM MÌN',
     technical_officer   VARCHAR(255) NOT NULL DEFAULT '',
     statistician        VARCHAR(255) NOT NULL DEFAULT ''
 );
 
-INSERT IGNORE INTO unit_infoss (id) VALUES (1);
+INSERT IGNORE INTO unit_infos (id) VALUES (1);
 
 -- ============================================================================
 -- 3. OVERVIEW (Tổng quan khu kỹ thuật) - singleton row
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS overviews (
 INSERT IGNORE INTO overviews (id) VALUES (1);
 
 -- ============================================================================
--- 4. STAFF (Danh sách cán bộ, chuyên môn kỹ thuật)
+-- 4. staffs (Danh sách cán bộ, chuyên môn kỹ thuật)
 -- Section I of the document
 -- ============================================================================
 -- Constraints from document:
@@ -101,7 +101,7 @@ INSERT IGNORE INTO overviews (id) VALUES (1);
 --   - rank: Required selection (Bắt buộc chọn)
 --   - Warehouse assignment: Required (can be added later)
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS staff (
+CREATE TABLE IF NOT EXISTS staffs (
     id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     full_name           VARCHAR(255) NOT NULL CHECK (length(trim(full_name)) > 0),
     date_of_birth       DATE DEFAULT NULL,
@@ -171,7 +171,7 @@ CREATE INDEX idx_warehouse_images_warehouse_id ON warehouse_images(warehouse_id)
 -- 5b. WAREHOUSE EQUIPMENT (Trang bị, vật tư trong kho)
 -- Tab: Trang bị, Vật tư
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS warehouse_equipment (
+CREATE TABLE IF NOT EXISTS warehouse_equipments (
     id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     warehouse_id    BIGINT UNSIGNED NOT NULL,
     name            VARCHAR(255) NOT NULL DEFAULT '',
@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS warehouse_equipment (
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_warehouse_equipment_warehouse_id ON warehouse_equipment(warehouse_id);
+CREATE INDEX idx_warehouse_equipments_warehouse_id ON warehouse_equipments(warehouse_id);
 
 -- ============================================================================
 -- 5c. WAREHOUSE INSPECTIONS (Kiểm tra kho trạm xưởng)
@@ -209,7 +209,7 @@ CREATE INDEX idx_warehouse_inspections_date ON warehouse_inspections(date);
 -- 5d. WAREHOUSE ACCESS (Đăng ký ra vào kho trạm xưởng)
 -- Tab: Đăng ký ra vào
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS warehouse_access (
+CREATE TABLE IF NOT EXISTS warehouse_accesses (
     id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     warehouse_id        BIGINT UNSIGNED NOT NULL,
     date                VARCHAR(255) NOT NULL DEFAULT '',
@@ -222,14 +222,14 @@ CREATE TABLE IF NOT EXISTS warehouse_access (
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_warehouse_access_warehouse_id ON warehouse_access(warehouse_id);
-CREATE INDEX idx_warehouse_access_date ON warehouse_access(date);
+CREATE INDEX idx_warehouse_accesses_warehouse_id ON warehouse_accesses(warehouse_id);
+CREATE INDEX idx_warehouse_accesses_date ON warehouse_accesses(date);
 
 -- ============================================================================
 -- 5e. WAREHOUSE HANDOVER (Giao nhận tạm thời)
 -- Tab: Giao nhận tạm thời
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS warehouse_handover (
+CREATE TABLE IF NOT EXISTS warehouse_handovers (
     id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     warehouse_id        BIGINT UNSIGNED NOT NULL,
     equipment_name      VARCHAR(255) NOT NULL DEFAULT '',
@@ -247,7 +247,7 @@ CREATE TABLE IF NOT EXISTS warehouse_handover (
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_warehouse_handover_warehouse_id ON warehouse_handover(warehouse_id);
+CREATE INDEX idx_warehouse_handovers_warehouse_id ON warehouse_handovers(warehouse_id);
 
 -- ============================================================================
 -- 5f. WAREHOUSE EXPORTS (Xuất kho)
@@ -297,7 +297,7 @@ CREATE INDEX idx_warehouse_imports_warehouse_id ON warehouse_imports(warehouse_i
 -- 5h. WAREHOUSE LIGHTNING (Chống sét)
 -- Tab: Chống sét
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS warehouse_lightning (
+CREATE TABLE IF NOT EXISTS warehouse_lightnings (
     id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     warehouse_id        BIGINT UNSIGNED NOT NULL,
     date                VARCHAR(255) NOT NULL DEFAULT '',
@@ -316,7 +316,7 @@ CREATE TABLE IF NOT EXISTS warehouse_lightning (
     FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_warehouse_lightning_warehouse_id ON warehouse_lightning(warehouse_id);
+CREATE INDEX idx_warehouse_lightnings_warehouse_id ON warehouse_lightnings(warehouse_id);
 
 -- ============================================================================
 -- 6. WEAPONS (Vũ khí trang bị)
@@ -361,7 +361,7 @@ CREATE INDEX idx_weapons_classification ON weapons(classification);
 --   - operating_hours: >= 0
 --   - allocation (biên chế): Number
 -- ============================================================================
-CREATE TABLE IF NOT EXISTS tech_equipment (
+CREATE TABLE IF NOT EXISTS tech_equipments (
     id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name                VARCHAR(255) NOT NULL CHECK (length(trim(name)) > 0),
     classification      VARCHAR(255) NOT NULL DEFAULT '',
@@ -456,7 +456,7 @@ CREATE INDEX idx_materials_name ON materials(name);
 CREATE INDEX idx_materials_classification ON materials(classification);
 
 -- ============================================================================
--- 10. STAFF ASSIGNMENTS (Many-to-many with assigned entities)
+-- 10. staffs ASSIGNMENTS (Many-to-many with assigned entities)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS staff_warehouses (
     id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -640,9 +640,9 @@ UPDATE overviews SET
 WHERE id = 1;
 
 -- ============================================================================
--- Sample Staff (Danh sách cán bộ kỹ thuật)
+-- Sample staffs (Danh sách cán bộ kỹ thuật)
 -- ============================================================================
-INSERT INTO staff (full_name, date_of_birth, id_number, rank_id, position, unit_department, education_id) VALUES
+INSERT INTO staffs (full_name, date_of_birth, id_number, rank_id, position, unit_department, education_id) VALUES
     (
         'Nguyễn Văn Hùng',
         '1975-03-15',
@@ -739,7 +739,7 @@ INSERT INTO warehouse_images (warehouse_id, file_path, file_type_id, description
 -- ============================================================================
 -- Sample Warehouse Equipment (Trang bị vật tư trong kho)
 -- ============================================================================
-INSERT INTO warehouse_equipment (warehouse_id, name, model, country, certification, maintenance, import_export) VALUES
+INSERT INTO warehouse_equipments (warehouse_id, name, model, country, certification, maintenance, import_export) VALUES
     (1, 'Tủ bảo quản vũ khí', 'TBQ-500', 'Việt Nam', 'Đạt - 2024', 'Bảo dưỡng 06/2025', 'Nhập: 50, Xuất: 10'),
     (1, 'Giá để đạn dược', 'GĐ-200', 'Việt Nam', 'Đạt - 2024', 'Bảo dưỡng 03/2025', 'Nhập: 20, Xuất: 5'),
     (2, 'Kệ chứa trang bị', 'KC-300', 'Việt Nam', 'Đạt - 2023', 'Bảo dưỡng 09/2024', 'Nhập: 30, Xuất: 8'),
@@ -759,7 +759,7 @@ INSERT INTO warehouse_inspections (warehouse_id, date, inspector_name, inspector
 -- ============================================================================
 -- Sample Warehouse Access (Đăng ký ra vào kho)
 -- ============================================================================
-INSERT INTO warehouse_access (warehouse_id, date, visitor_name, companion_count, unit, responsible_person, time_in, time_out) VALUES
+INSERT INTO warehouse_accesses (warehouse_id, date, visitor_name, companion_count, unit, responsible_person, time_in, time_out) VALUES
     (1, '2025-03-10', 'Phạm Đức Anh', 2, 'Đội Dò tìm', 'Nguyễn Văn Hùng', '08:30', '10:15'),
     (1, '2025-03-12', 'Đỗ Quang Hải', 0, 'Đội Dò tìm', 'Nguyễn Văn Hùng', '14:00', '15:30'),
     (2, '2025-03-15', 'Lê Thị Hoa', 1, 'Đội Dò tìm', 'Trần Văn Minh', '09:00', '11:00'),
@@ -769,7 +769,7 @@ INSERT INTO warehouse_access (warehouse_id, date, visitor_name, companion_count,
 -- ============================================================================
 -- Sample Warehouse Handover (Giao nhận tạm thời)
 -- ============================================================================
-INSERT INTO warehouse_handover (warehouse_id, equipment_name, unit, handover_date, quality_level, quantity, giver, receiver, return_date, return_quality, return_quantity, return_giver, return_receiver) VALUES
+INSERT INTO warehouse_handovers (warehouse_id, equipment_name, unit, handover_date, quality_level, quantity, giver, receiver, return_date, return_quality, return_quantity, return_giver, return_receiver) VALUES
     (1, 'Súng AK-47', 'Khẩu', '2025-02-01', 'Cấp 1', 5, 'Nguyễn Văn Hùng', 'Phạm Đức Anh', '2025-02-15', 'Cấp 1', 5, 'Phạm Đức Anh', 'Nguyễn Văn Hùng'),
     (1, 'Đạn 7.62mm', 'Hộp', '2025-02-01', 'Cấp 1', 10, 'Nguyễn Văn Hùng', 'Phạm Đức Anh', '2025-02-15', 'Cấp 1', 8, 'Phạm Đức Anh', 'Nguyễn Văn Hùng'),
     (3, 'Máy dò mìn AN-19/2', 'Bộ', '2025-03-01', 'Cấp 1', 2, 'Lê Thị Hoa', 'Đỗ Quang Hải', '', '', 0, '', ''),
@@ -796,7 +796,7 @@ INSERT INTO warehouse_imports (warehouse_id, sender_name, sender_unit, reason, i
 -- ============================================================================
 -- Sample Warehouse Lightning (Đo chống sét)
 -- ============================================================================
-INSERT INTO warehouse_lightning (warehouse_id, date, weather, direct_rod1_rdo, direct_rod1_rxk, direct_rod1_result, direct_rod2_rdo, direct_rod2_rxk, direct_rod2_result, direct_rod3_rdo, direct_rod3_rxk, direct_rod3_result, induction_rdo, induction_result) VALUES
+INSERT INTO warehouse_lightnings (warehouse_id, date, weather, direct_rod1_rdo, direct_rod1_rxk, direct_rod1_result, direct_rod2_rdo, direct_rod2_rxk, direct_rod2_result, direct_rod3_rdo, direct_rod3_rxk, direct_rod3_result, induction_rdo, induction_result) VALUES
     (1, '2025-01-10', 'Nắng, nhiệt độ 25°C, độ ẩm 65%', '3.5', '10', 'Đạt', '4.0', '10', 'Đạt', '3.8', '10', 'Đạt', '2.1', 'Đạt'),
     (2, '2025-01-10', 'Nắng, nhiệt độ 25°C, độ ẩm 65%', '4.2', '10', 'Đạt', '3.9', '10', 'Đạt', '4.5', '10', 'Đạt', '2.5', 'Đạt'),
     (3, '2025-01-11', 'Nhiều mây, nhiệt độ 22°C, độ ẩm 75%', '5.0', '10', 'Đạt', '4.8', '10', 'Đạt', '5.2', '10', 'Đạt', '3.0', 'Đạt'),
@@ -818,7 +818,7 @@ INSERT INTO weapons (name, classification, unit_measure, quantity, country, year
 -- ============================================================================
 -- Sample Tech Equipment (Trang thiết bị kỹ thuật)
 -- ============================================================================
-INSERT INTO tech_equipment (name, classification, unit_measure, quantity, country, year, allocation, repair_id, operating_hours) VALUES
+INSERT INTO tech_equipments (name, classification, unit_measure, quantity, country, year, allocation, repair_id, operating_hours) VALUES
     ('Máy dò mìn AN-19/2', 'Cấp 1', 'Bộ', 5, 'Nga', 2015, 5, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 1250.5),
     ('Máy rà phá bom mìn cầm tay CEIA MIL-D1', 'Cấp 1', 'Bộ', 3, 'Ý', 2019, 3, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 890.0),
     ('Thiết bị đo từ trường Geometrics G-858', 'Cấp 1', 'Bộ', 2, 'Mỹ', 2020, 2, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = 'Đang sửa'), 450.0),
@@ -839,108 +839,108 @@ INSERT INTO vehicles (name, classification, brand, vehicle_type, country, year, 
     ('Xe máy Honda Wave RSX', 'Cấp 3', 'Honda', 'Xe máy', 'Việt Nam', 2022, 3, (SELECT id FROM enum_constants WHERE type = 'repair_status' AND enum = ''), 800.0, 15000.0);
 
 -- ============================================================================
--- Sample Staff Assignments (Many-to-many mapping)
+-- Sample staffs Assignments (Many-to-many mapping)
 -- ============================================================================
 INSERT INTO staff_warehouses (staff_id, warehouse_id)
 SELECT s.id, w.id
-FROM staff s
+FROM staffs s
 JOIN warehouses w ON w.code IN ('Kho A1', 'Kho B1')
 WHERE s.id_number = 'QĐ-007890';
 
 INSERT INTO staff_warehouses (staff_id, warehouse_id)
 SELECT s.id, w.id
-FROM staff s
+FROM staffs s
 JOIN warehouses w ON w.code = 'Kho A1'
 WHERE s.id_number = 'QĐ-001234';
 
 INSERT INTO staff_warehouses (staff_id, warehouse_id)
 SELECT s.id, w.id
-FROM staff s
+FROM staffs s
 JOIN warehouses w ON w.code = 'Kho A2'
 WHERE s.id_number = 'QĐ-002345';
 
 INSERT INTO staff_warehouses (staff_id, warehouse_id)
 SELECT s.id, w.id
-FROM staff s
+FROM staffs s
 JOIN warehouses w ON w.code = 'Kho B1'
 WHERE s.id_number = 'QĐ-003456';
 
 INSERT INTO staff_warehouses (staff_id, warehouse_id)
 SELECT s.id, w.id
-FROM staff s
+FROM staffs s
 JOIN warehouses w ON w.code = 'Kho C1'
 WHERE s.id_number IN ('QĐ-005678', 'QĐ-008901');
 
 INSERT INTO staff_weapons (staff_id, weapon_id)
 SELECT s.id, w.id
-FROM staff s
+FROM staffs s
 JOIN weapons w ON w.name LIKE '%AK-47%'
 WHERE s.id_number IN ('QĐ-001234', 'QĐ-002345', 'QĐ-004567', 'QĐ-007890');
 
 INSERT INTO staff_weapons (staff_id, weapon_id)
 SELECT s.id, w.id
-FROM staff s
+FROM staffs s
 JOIN weapons w ON w.name LIKE '%K54%'
 WHERE s.id_number IN ('QĐ-001234', 'QĐ-003456');
 
 INSERT INTO staff_weapons (staff_id, weapon_id)
 SELECT s.id, w.id
-FROM staff s
+FROM staffs s
 JOIN weapons w ON w.name LIKE '%M16A2%'
 WHERE s.id_number = 'QĐ-007890';
 
 INSERT INTO staff_vehicles (staff_id, vehicle_id)
 SELECT s.id, v.id
-FROM staff s
+FROM staffs s
 JOIN vehicles v ON v.name LIKE '%Land Cruiser%'
 WHERE s.id_number = 'QĐ-001234';
 
 INSERT INTO staff_vehicles (staff_id, vehicle_id)
 SELECT s.id, v.id
-FROM staff s
+FROM staffs s
 JOIN vehicles v ON v.name LIKE '%HD72%'
 WHERE s.id_number = 'QĐ-002345';
 
 INSERT INTO staff_vehicles (staff_id, vehicle_id)
 SELECT s.id, v.id
-FROM staff s
+FROM staffs s
 JOIN vehicles v ON v.name LIKE '%NQR75LE%'
 WHERE s.id_number = 'QĐ-004567';
 
 INSERT INTO staff_vehicles (staff_id, vehicle_id)
 SELECT s.id, v.id
-FROM staff s
+FROM staffs s
 JOIN vehicles v ON v.name LIKE '%Hilux%'
 WHERE s.id_number = 'QĐ-007890';
 
 INSERT INTO staff_vehicles (staff_id, vehicle_id)
 SELECT s.id, v.id
-FROM staff s
+FROM staffs s
 JOIN vehicles v ON v.name LIKE '%Tadano%'
 WHERE s.id_number = 'QĐ-008901';
 
 INSERT INTO staff_tech_equipment (staff_id, tech_equipment_id)
 SELECT s.id, t.id
-FROM staff s
-JOIN tech_equipment t ON t.name LIKE '%AN-19/2%'
+FROM staffs s
+JOIN tech_equipments t ON t.name LIKE '%AN-19/2%'
 WHERE s.id_number IN ('QĐ-001234', 'QĐ-007890');
 
 INSERT INTO staff_tech_equipment (staff_id, tech_equipment_id)
 SELECT s.id, t.id
-FROM staff s
-JOIN tech_equipment t ON t.name LIKE '%CEIA MIL-D1%'
+FROM staffs s
+JOIN tech_equipments t ON t.name LIKE '%CEIA MIL-D1%'
 WHERE s.id_number = 'QĐ-002345';
 
 INSERT INTO staff_tech_equipment (staff_id, tech_equipment_id)
 SELECT s.id, t.id
-FROM staff s
-JOIN tech_equipment t ON t.name LIKE '%Geometrics G-858%'
+FROM staffs s
+JOIN tech_equipments t ON t.name LIKE '%Geometrics G-858%'
 WHERE s.id_number = 'QĐ-003456';
 
 INSERT INTO staff_tech_equipment (staff_id, tech_equipment_id)
 SELECT s.id, t.id
-FROM staff s
-JOIN tech_equipment t ON t.name LIKE '%QC-100%'
+FROM staffs s
+JOIN tech_equipments t ON t.name LIKE '%QC-100%'
 WHERE s.id_number = 'QĐ-005678';
 
 -- ============================================================================

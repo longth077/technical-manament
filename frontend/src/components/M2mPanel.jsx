@@ -1,143 +1,346 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState, useCallback, useRef } from "react";
 import { Api } from "../services/api";
+import { ENTITY_SCHEMAS } from "../services/entitySchema";
 
-export default function M2mPanel({
-  staffId,
-  junctionEntity,
-  filterField,
-  targetEntity,
-  targetIdField,
-  targetLabelField,
-  label,
-  credential,
-  canEdit,
-}) {
-  const [assignments, setAssignments] = useState([]);
+/** Renders full key-value detail card for a target entity item */
+function EntityDetailCard({ item, schema }) {
+  if (!item) return <div className="m2m-empty">Không có thông tin</div>;
+  return (
+    <table className="assign-detail-table">
+      <tbody>
+        {schema
+          .filter((col) => item[col.key] !== undefined)
+          .map((col) => (
+            <tr key={col.key}>
+              <td className="assign-detail-label">{col.label}</td>
+              <td className="assign-detail-value">
+                {String(item[col.key] ?? "")}
+              </td>
+            </tr>
+          ))}
+      </tbody>
+    </table>
+  );
+}
+
+/** Tab content for one M2M relationship category */
+function AssignTab({ config, staffId, credential, canEdit }) {
+  const {
+    junctionEntity,
+    filterField,
+    targetEntity,
+    targetIdField,
+    targetLabelField,
+    primaryEntity,
+    primaryLabelField,
+    coAssigneeTitle,
+    label,
+  } = config;
+
   const [available, setAvailable] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [allPrimaries, setAllPrimaries] = useState({});
   const [selectedId, setSelectedId] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
+  const [coAssignees, setCoAssignees] = useState({});
   const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
 
-  const loadAssignments = () => {
-    if (!staffId) return;
-    Api.listEntity(junctionEntity, credential, { [filterField]: staffId })
-      .then((data) => setAssignments(data.rows || []))
-      .catch((e) => setError(e.message));
-  };
+  const targetSchema = ENTITY_SCHEMAS[targetEntity] || [];
+  const loadedTargetIds = useRef(new Set());
 
-  useEffect(() => {
-    if (!staffId) return;
-    let active = true;
+  const load = useCallback(() => {
     setLoading(true);
     Promise.all([
-      Api.listEntity(junctionEntity, credential, { [filterField]: staffId }),
       Api.listEntity(targetEntity, credential),
+      Api.listEntity(junctionEntity, credential, { [filterField]: staffId }),
+      Api.listEntity(primaryEntity, credential),
     ])
-      .then(([jData, tData]) => {
-        if (!active) return;
+      .then(([tData, jData, pData]) => {
+        setAvailable(tData.rows || []);
         setAssignments(jData.rows || []);
-        const items = tData.rows || [];
-        setAvailable(items);
-        if (items.length > 0) setSelectedId(String(items[0].id));
+        const map = {};
+        for (const s of pData.rows || []) {
+          map[String(s.id)] = s;
+        }
+        setAllPrimaries(map);
       })
-      .catch((e) => {
-        if (active) setError(e.message);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [staffId, junctionEntity, targetEntity, credential]);
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [targetEntity, junctionEntity, filterField, staffId, primaryEntity, credential]);
 
-  const getLabel = (row) => {
-    const targetId = row[targetIdField];
-    const item = available.find((i) => String(i.id) === String(targetId));
-    if (item) return item[targetLabelField] || `ID: ${targetId}`;
-    const nameField = targetIdField.replace("_id", "_name");
-    return row[nameField] || `ID: ${targetId ?? "?"}`;
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const loadCoAssignees = useCallback(
+    async (targetId) => {
+      const key = String(targetId);
+      if (loadedTargetIds.current.has(key)) return;
+      loadedTargetIds.current.add(key);
+      try {
+        const data = await Api.listEntity(junctionEntity, credential, {
+          [targetIdField]: targetId,
+        });
+        setCoAssignees((prev) => ({ ...prev, [key]: data.rows || [] }));
+      } catch {
+        loadedTargetIds.current.delete(key);
+      }
+    },
+    [junctionEntity, targetIdField, credential],
+  );
+
+  const getTargetItem = (row) => {
+    const tid = row[targetIdField];
+    return available.find((i) => String(i.id) === String(tid)) || null;
   };
 
-  const handleAdd = async () => {
+  const invalidateCoCache = (targetId) => {
+    const key = String(targetId);
+    loadedTargetIds.current.delete(key);
+    setCoAssignees((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const handleAssign = async () => {
     if (!selectedId) return;
+    setAdding(true);
+    setError("");
     try {
       await Api.createEntity(
         junctionEntity,
-        { [filterField]: Number(staffId), [targetIdField]: Number(selectedId) },
+        {
+          [filterField]: Number(staffId),
+          [targetIdField]: Number(selectedId),
+        },
         credential,
       );
-      setError("");
-      loadAssignments();
+      setSelectedId("");
+      invalidateCoCache(selectedId);
+      load();
     } catch (e) {
       setError(e.message);
+    } finally {
+      setAdding(false);
     }
   };
 
-  const handleRemove = async (id) => {
+  const handleRemove = async (id, targetId) => {
     try {
       await Api.deleteEntity(junctionEntity, id, credential);
       setError("");
-      loadAssignments();
+      invalidateCoCache(targetId);
+      load();
     } catch (e) {
       setError(e.message);
     }
   };
 
-  if (!staffId) return null;
+  const toggleExpand = (row) => {
+    const rid = row.id;
+    const targetId = row[targetIdField];
+    if (expandedId === rid) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(rid);
+      loadCoAssignees(targetId);
+    }
+  };
+
+  if (loading) return <div className="loading-bar">Đang tải...</div>;
+
+  const assignedTargetIds = new Set(
+    assignments.map((a) => String(a[targetIdField])),
+  );
+  const unassigned = available.filter(
+    (i) => !assignedTargetIds.has(String(i.id)),
+  );
 
   return (
-    <div className="m2m-panel">
-      <div className="m2m-panel-title">{label}</div>
-      {loading ? (
-        <div className="loading-bar">Đang tải...</div>
-      ) : (
-        <>
-          {assignments.length === 0 ? (
-            <div className="m2m-empty">Chưa có phân công</div>
-          ) : (
-            <ul className="m2m-list">
-              {assignments.map((row) => (
-                <li key={row.id} className="m2m-item">
-                  <span>{getLabel(row)}</span>
-                  {canEdit && (
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleRemove(row.id)}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-          {canEdit && available.length > 0 && (
-            <div className="m2m-add">
-              <select
-                value={selectedId}
-                onChange={(e) => setSelectedId(e.target.value)}
-                className="form-select m2m-select"
-              >
-                <option value="">-- Chọn --</option>
-                {available.map((item) => (
-                  <option key={item.id} value={String(item.id)}>
-                    {item[targetLabelField] || `ID: ${item.id}`}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={handleAdd}
-                disabled={!selectedId}
-              >
-                + Thêm
-              </button>
-            </div>
-          )}
-          {error && <div className="error-msg">{error}</div>}
-        </>
+    <div className="assign-tab-body">
+      {canEdit && (
+        <div className="assign-add-row">
+          <select
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="form-select"
+          >
+            <option value="">
+              -- Chọn {label.toLowerCase()} để phân công --
+            </option>
+            {unassigned.map((item) => (
+              <option key={item.id} value={String(item.id)}>
+                {item[targetLabelField] || `ID: ${item.id}`}
+              </option>
+            ))}
+          </select>
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={handleAssign}
+            disabled={!selectedId || adding}
+          >
+            {adding ? "..." : "+ Phân công"}
+          </button>
+        </div>
       )}
+      {error && <div className="error-msg">{error}</div>}
+
+      {assignments.length === 0 ? (
+        <div className="m2m-empty">Chưa có phân công nào</div>
+      ) : (
+        <ul className="assign-list">
+          {assignments.map((row) => {
+            const item = getTargetItem(row);
+            const isExpanded = expandedId === row.id;
+            const targetId = row[targetIdField];
+            const coKey = String(targetId);
+            const coList = coAssignees[coKey];
+            return (
+              <li key={row.id} className="assign-item">
+                <div className="assign-item-header">
+                  <span className="assign-item-name">
+                    {item
+                      ? item[targetLabelField] || `ID: ${item.id}`
+                      : `ID: ${targetId ?? "?"}`}
+                  </span>
+                  <div className="assign-item-actions">
+                    <button
+                      className="btn btn-sm btn-outline"
+                      onClick={() => toggleExpand(row)}
+                    >
+                      {isExpanded ? "▲ Ẩn" : "▼ Chi tiết"}
+                    </button>
+                    {canEdit && (
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleRemove(row.id, targetId)}
+                      >
+                        ✕ Bỏ
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="assign-item-detail">
+                    <div className="assign-detail-section">
+                      <div className="assign-detail-title">
+                        Thông tin {label}
+                      </div>
+                      <EntityDetailCard item={item} schema={targetSchema} />
+                    </div>
+
+                    <div className="assign-detail-section">
+                      <div className="assign-detail-title">Ngày phân công</div>
+                      <div className="assign-detail-value">
+                        {row.assigned_at || "—"}
+                      </div>
+                    </div>
+
+                    <div className="assign-detail-section">
+                      <div className="assign-detail-title">
+                        {coAssigneeTitle || `Cán bộ phụ trách ${label.toLowerCase()} này`}
+                      </div>
+                      {!coList ? (
+                        <div className="m2m-empty">Đang tải...</div>
+                      ) : coList.length === 0 ? (
+                        <div className="m2m-empty">Không có</div>
+                      ) : (
+                        <ul className="co-assign-list">
+                          {coList.map((ca) => {
+                            const pItem = allPrimaries[String(ca[filterField])];
+                            const isMe =
+                              String(ca[filterField]) === String(staffId);
+                            return (
+                              <li
+                                key={ca.id}
+                                className={`co-assign-item${isMe ? " co-assign-me" : ""}`}
+                              >
+                                <span>
+                                  {pItem
+                                    ? pItem[primaryLabelField] || `ID: ${ca[filterField]}`
+                                    : `ID: ${ca[filterField]}`}
+                                </span>
+                                {isMe && (
+                                  <span className="co-assign-badge">
+                                    (mục này)
+                                  </span>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Single unified assignment modal for all M2M relationships of a staff member.
+ * Tabs: one per M2M config entry (Kho | Vũ khí | Phương tiện | Thiết bị).
+ * Each tab shows full entity info, assignment date, and all co-assignees.
+ */
+export default function StaffAssignModal({
+  staffId,
+  configs,
+  credential,
+  canEdit,
+  entityLabel,
+  onClose,
+}) {
+  const [activeTab, setActiveTab] = useState(0);
+
+  if (!staffId || !configs?.length) return null;
+
+  return (
+    <div
+      className="modal-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="modal-box modal-box-lg">
+        <div className="modal-header">
+          <span className="modal-title">Phân công — {entityLabel || "Mục"} #{staffId}</span>
+          <button className="btn btn-sm modal-close" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        <div className="assign-tabs">
+          {configs.map((cfg, i) => (
+            <button
+              key={cfg.junctionEntity}
+              className={`assign-tab-btn${activeTab === i ? " active" : ""}`}
+              onClick={() => setActiveTab(i)}
+            >
+              {cfg.label}
+            </button>
+          ))}
+        </div>
+        <div className="modal-body">
+          {configs.map((cfg, i) =>
+            activeTab === i ? (
+              <AssignTab
+                key={cfg.junctionEntity}
+                config={cfg}
+                staffId={staffId}
+                credential={credential}
+                canEdit={canEdit}
+              />
+            ) : null,
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -52,15 +52,19 @@ class EntityService {
   }
 
   async create(entity, payload) {
-    this._validate(entity, payload);
+    // Strip auto-managed fields so DB AUTO_INCREMENT always generates the id
+    const { id: _id, created_at: _ca, updated_at: _ua, ...cleanPayload } = payload;
+    this._validate(entity, cleanPayload);
     const repo = this.getRepository(entity);
-    return repo.create(payload);
+    return repo.create(cleanPayload);
   }
 
   async update(entity, id, payload) {
-    this._validate(entity, payload);
+    // Strip auto-managed fields so clients cannot overwrite them
+    const { id: _id, created_at: _ca, updated_at: _ua, ...cleanPayload } = payload;
+    this._validate(entity, cleanPayload);
     const repo = this.getRepository(entity);
-    const row = await repo.update(id, payload);
+    const row = await repo.update(id, cleanPayload);
     if (!row) {
       const err = new Error('Record not found');
       err.status = 404;

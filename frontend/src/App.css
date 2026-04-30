@@ -659,6 +659,24 @@
   outline-offset: -1px;
 }
 
+/* ===== Name column link button ===== */
+.row-name-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color var(--transition);
+}
+.row-name-link:hover {
+  color: var(--color-primary-dark);
+}
+
 /* ===== Admin Sections ===== */
 .admin-section {
   margin-top: 0;
@@ -1184,4 +1202,238 @@
 
 .m2m-select {
   flex: 1;
+}
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-box {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  min-width: 320px;
+  max-width: 520px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.modal-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.modal-close {
+  font-size: 1rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.modal-body {
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.modal-assign-btn {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+}
+
+.m2m-assigned-note {
+  font-size: 0.82rem;
+  color: var(--color-success);
+  font-style: italic;
+}
+/* ===== Unified Staff Assignment Modal ===== */
+.modal-box-lg {
+  max-width: 700px;
+  width: 95vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-box-lg .modal-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.assign-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 1.25rem;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.assign-tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.assign-tab-btn:hover { color: var(--color-primary); }
+.assign-tab-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: 600;
+}
+
+.assign-tab-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.assign-add-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.assign-add-row .form-select { flex: 1; }
+
+.assign-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.assign-item {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.assign-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface);
+  gap: 0.5rem;
+}
+
+.assign-item-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assign-item-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.assign-item-detail {
+  padding: 0.75rem;
+  background: #f8f9fb;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.assign-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.assign-detail-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.2rem;
+}
+
+.assign-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.assign-detail-table tr { border-bottom: 1px solid var(--color-border-light); }
+.assign-detail-table tr:last-child { border-bottom: none; }
+
+.assign-detail-label {
+  padding: 0.2rem 0.75rem 0.2rem 0;
+  color: var(--color-text-secondary);
+  width: 38%;
+  vertical-align: top;
+}
+
+.assign-detail-value {
+  padding: 0.2rem 0;
+  font-weight: 500;
+}
+
+.co-assign-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.co-assign-item {
+  font-size: 0.85rem;
+  padding: 0.1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.co-assign-item.co-assign-me { color: var(--color-primary); font-weight: 600; }
+
+.co-assign-badge {
+  font-size: 0.72rem;
+  color: var(--color-primary);
+  font-style: italic;
+}
+
+/* Assignment button bar below edit form */
+.m2m-assign-bar {
+  padding: 0.5rem 1.25rem 0.75rem;
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }

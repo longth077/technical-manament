@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Api } from "../services/api";
 import TableForm from "./TableForm";
-import M2mPanel from "./M2mPanel";
-import { getColumnLabel } from "../services/entitySchema";
+import StaffAssignModal from "./M2mPanel";
+import { getColumnLabel, ENTITY_SCHEMAS } from "../services/entitySchema";
 import { M2M_CONFIG } from "../services/entityConfig";
 
 function downloadBlob(blob, filename) {
@@ -28,6 +28,8 @@ export default function EntitySection({
   const [loadKey, setLoadKey] = useState(0);
   const [createFormKey, setCreateFormKey] = useState(0);
   const [editFormKey, setEditFormKey] = useState(0);
+  const [showM2mModal, setShowM2mModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const loadRows = () => {
     setLoadKey((k) => k + 1);
@@ -57,11 +59,20 @@ export default function EntitySection({
 
   const createRow = async (payload) => {
     try {
-      await Api.createEntity(entity, payload, credential);
+      const data = await Api.createEntity(entity, payload, credential);
       setShowCreate(false);
       setError("");
       setCreateFormKey((k) => k + 1);
-      loadRows();
+      if (data?.row) {
+        // Append new row to table and open view/detail mode so assign button is visible
+        // (do NOT call loadRows here — it would reset editingRow via useEffect)
+        setRows((prev) => [...prev, data.row]);
+        setEditingRow(data.row);
+        setIsEditMode(false);
+        setEditFormKey((k) => k + 1);
+      } else {
+        loadRows();
+      }
     } catch (e) {
       setError(e.message);
     }
@@ -72,6 +83,8 @@ export default function EntitySection({
     try {
       await Api.updateEntity(entity, editingRow.id, payload, credential);
       setEditingRow(null);
+      setIsEditMode(false);
+      setShowM2mModal(false);
       setError("");
       setEditFormKey((k) => k + 1);
       loadRows();
@@ -104,6 +117,8 @@ export default function EntitySection({
   const handleToggleCreate = () => {
     setError("");
     setEditingRow(null);
+    setIsEditMode(false);
+    setShowM2mModal(false);
     setEditFormKey((k) => k + 1);
     if (showCreate) {
       setShowCreate(false);
@@ -121,6 +136,8 @@ export default function EntitySection({
 
   const handleCancelEdit = () => {
     setEditingRow(null);
+    setIsEditMode(false);
+    setShowM2mModal(false);
     setError("");
     setEditFormKey((k) => k + 1);
   };
@@ -168,40 +185,65 @@ export default function EntitySection({
           </div>
         )}
 
-        {/* --- EDIT FORM (inline, below header) --- */}
-        {canEdit && editingRow && !showCreate && (
+        {/* --- DETAIL / EDIT FORM (inline, below header) --- */}
+        {editingRow && !showCreate && (
           <div className="inline-form-wrap">
-            <div className="inline-form-title">Sửa dòng #{editingRow.id}</div>
+            <div className="inline-form-title">
+              {isEditMode
+                ? `Sửa dòng #${editingRow.id}`
+                : `Chi tiết #${editingRow.id}`}
+            </div>
             <TableForm
               key={`${editingRow.id}-${editFormKey}`}
               entity={entity}
               initialData={editingRow}
-              onSubmit={updateRow}
-              onCancel={handleCancelEdit}
+              onSubmit={isEditMode ? updateRow : undefined}
+              onCancel={isEditMode ? handleCancelEdit : undefined}
               submitLabel="Cập nhật"
               credential={credential}
+              readOnly={!isEditMode || !canEdit}
             />
+            {(!isEditMode || !canEdit) && (
+              <div className="table-form-actions">
+                {canEdit && (
+                  <button
+                    className="btn btn-sm btn-primary"
+                    onClick={() => setIsEditMode(true)}
+                  >
+                    ✏️ Chỉnh sửa
+                  </button>
+                )}
+                <button
+                  className="btn btn-sm btn-secondary"
+                  onClick={handleCancelEdit}
+                >
+                  ✕ Đóng
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* --- M2M PANELS (shown below edit form) --- */}
+        {/* --- ASSIGNMENT BUTTON + MODAL --- */}
         {canEdit && editingRow && !showCreate && M2M_CONFIG[entity] && (
-          <div className="m2m-panels-wrap">
-            {M2M_CONFIG[entity].map((cfg) => (
-              <M2mPanel
-                key={cfg.junctionEntity}
-                staffId={editingRow.id}
-                junctionEntity={cfg.junctionEntity}
-                filterField={cfg.filterField}
-                targetEntity={cfg.targetEntity}
-                targetIdField={cfg.targetIdField}
-                targetLabelField={cfg.targetLabelField}
-                label={cfg.label}
-                credential={credential}
-                canEdit={canEdit}
-              />
-            ))}
+          <div className="m2m-assign-bar">
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={() => setShowM2mModal(true)}
+            >
+              🔗 Phân công
+            </button>
           </div>
+        )}
+        {showM2mModal && editingRow && M2M_CONFIG[entity] && (
+          <StaffAssignModal
+            staffId={editingRow.id}
+            configs={M2M_CONFIG[entity]}
+            credential={credential}
+            canEdit={canEdit}
+            entityLabel={entityLabel}
+            onClose={() => setShowM2mModal(false)}
+          />
         )}
 
         {/* --- DATA TABLE --- */}
@@ -222,13 +264,33 @@ export default function EntitySection({
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
+                  {rows.map((row) => {
+                    const nameCol = ENTITY_SCHEMAS[entity]?.[0]?.key;
+                    return (
                     <tr
                       key={row.id ?? JSON.stringify(row)}
                       className={editingRow?.id === row.id ? "row-editing" : ""}
                     >
                       {columns.map((c) => (
-                        <td key={c}>{String(row[c] ?? "")}</td>
+                        <td key={c}>
+                          {c === nameCol ? (
+                            <button
+                              className="row-name-link"
+                              onClick={() => {
+                                setEditingRow(row);
+                                setIsEditMode(false);
+                                setShowCreate(false);
+                                setCreateFormKey((k) => k + 1);
+                                setShowM2mModal(false);
+                                setError("");
+                              }}
+                            >
+                              {String(row[c] ?? "")}
+                            </button>
+                          ) : (
+                            String(row[c] ?? "")
+                          )}
+                        </td>
                       ))}
                       {canEdit && (
                         <td>
@@ -237,6 +299,8 @@ export default function EntitySection({
                               className="btn btn-sm btn-outline"
                               onClick={() => {
                                 setEditingRow(row);
+                                setIsEditMode(true);
+                                setShowM2mModal(false);
                                 setShowCreate(false);
                                 setCreateFormKey((k) => k + 1);
                                 setError("");
@@ -254,7 +318,8 @@ export default function EntitySection({
                         </td>
                       )}
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

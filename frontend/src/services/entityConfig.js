@@ -48,6 +48,9 @@ export const M2M_CONFIG = {
       targetEntity: "warehouses",
       targetIdField: "warehouse_id",
       targetLabelField: "code",
+      primaryEntity: "staffs",
+      primaryLabelField: "full_name",
+      coAssigneeTitle: "Cán bộ khác phụ trách kho này",
       label: "Kho phụ trách",
     },
     {
@@ -56,6 +59,9 @@ export const M2M_CONFIG = {
       targetEntity: "weapons",
       targetIdField: "weapon_id",
       targetLabelField: "name",
+      primaryEntity: "staffs",
+      primaryLabelField: "full_name",
+      coAssigneeTitle: "Cán bộ khác phụ trách vũ khí này",
       label: "Vũ khí phụ trách",
     },
     {
@@ -64,6 +70,9 @@ export const M2M_CONFIG = {
       targetEntity: "vehicles",
       targetIdField: "vehicle_id",
       targetLabelField: "name",
+      primaryEntity: "staffs",
+      primaryLabelField: "full_name",
+      coAssigneeTitle: "Cán bộ khác phụ trách phương tiện này",
       label: "Phương tiện phụ trách",
     },
     {
@@ -72,7 +81,66 @@ export const M2M_CONFIG = {
       targetEntity: "tech_equipments",
       targetIdField: "tech_equipment_id",
       targetLabelField: "name",
+      primaryEntity: "staffs",
+      primaryLabelField: "full_name",
+      coAssigneeTitle: "Cán bộ khác phụ trách thiết bị này",
       label: "Thiết bị phụ trách",
+    },
+  ],
+
+  warehouses: [
+    {
+      junctionEntity: "staff_warehouses",
+      filterField: "warehouse_id",
+      targetEntity: "staffs",
+      targetIdField: "staff_id",
+      targetLabelField: "full_name",
+      primaryEntity: "warehouses",
+      primaryLabelField: "code",
+      coAssigneeTitle: "Kho khác phụ trách bởi cán bộ này",
+      label: "Cán bộ phụ trách",
+    },
+  ],
+
+  weapons: [
+    {
+      junctionEntity: "staff_weapons",
+      filterField: "weapon_id",
+      targetEntity: "staffs",
+      targetIdField: "staff_id",
+      targetLabelField: "full_name",
+      primaryEntity: "weapons",
+      primaryLabelField: "name",
+      coAssigneeTitle: "Vũ khí khác phụ trách bởi cán bộ này",
+      label: "Cán bộ phụ trách",
+    },
+  ],
+
+  vehicles: [
+    {
+      junctionEntity: "staff_vehicles",
+      filterField: "vehicle_id",
+      targetEntity: "staffs",
+      targetIdField: "staff_id",
+      targetLabelField: "full_name",
+      primaryEntity: "vehicles",
+      primaryLabelField: "name",
+      coAssigneeTitle: "Phương tiện khác phụ trách bởi cán bộ này",
+      label: "Cán bộ phụ trách",
+    },
+  ],
+
+  tech_equipments: [
+    {
+      junctionEntity: "staff_tech_equipment",
+      filterField: "tech_equipment_id",
+      targetEntity: "staffs",
+      targetIdField: "staff_id",
+      targetLabelField: "full_name",
+      primaryEntity: "tech_equipments",
+      primaryLabelField: "name",
+      coAssigneeTitle: "Thiết bị khác phụ trách bởi cán bộ này",
+      label: "Cán bộ phụ trách",
     },
   ],
 };

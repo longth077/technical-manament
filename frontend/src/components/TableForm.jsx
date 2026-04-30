@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ENTITY_SCHEMAS, buildDefaultRow } from "../services/entitySchema";
 import { Api } from "../services/api";
 
-function EnumSelect({ enumType, value, onChange, credential }) {
+function EnumSelect({ enumType, value, onChange, credential, readOnly = false }) {
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -49,7 +49,7 @@ function EnumSelect({ enumType, value, onChange, credential }) {
           className="form-select"
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
-          disabled={loading}
+          disabled={loading || readOnly}
         >
           <option value="">-- Chọn --</option>
           {options.map((opt) => (
@@ -58,14 +58,16 @@ function EnumSelect({ enumType, value, onChange, credential }) {
             </option>
           ))}
         </select>
-        <button
-          type="button"
-          className="btn btn-sm btn-outline enum-add-btn"
-          onClick={() => setShowAdd((v) => !v)}
-          title="Thêm giá trị mới"
-        >
-          +
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            className="btn btn-sm btn-outline enum-add-btn"
+            onClick={() => setShowAdd((v) => !v)}
+            title="Thêm giá trị mới"
+          >
+            +
+          </button>
+        )}
       </div>
       {showAdd && (
         <div className="enum-add-row">
@@ -129,6 +131,7 @@ export default function TableForm({
   onCancel,
   submitLabel = "Lưu",
   credential,
+  readOnly = false,
 }) {
   const schema = ENTITY_SCHEMAS[entity];
   const defaultFields = buildDefaultRow(entity);
@@ -310,7 +313,8 @@ export default function TableForm({
 
   return (
     <div className="table-form">
-      {/* Mode toggle */}
+      {/* Mode toggle — hidden in read-only view */}
+      {!readOnly && (
       <div className="table-form-header">
         <div className="mode-toggle">
           <button
@@ -329,6 +333,7 @@ export default function TableForm({
           </button>
         </div>
       </div>
+      )}
 
       {mode === "table" ? (
         <div className="form-grid">
@@ -339,8 +344,7 @@ export default function TableForm({
                 <select
                   className="form-select"
                   value={fields[col.key] ?? ""}
-                  onChange={(e) => setField(col.key, e.target.value)}
-                >
+                  onChange={(e) => setField(col.key, e.target.value)}                  disabled={readOnly}                >
                   {col.options.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
@@ -353,6 +357,7 @@ export default function TableForm({
                   value={fields[col.key] ?? ""}
                   onChange={(v) => setField(col.key, v)}
                   credential={credential}
+                  readOnly={readOnly}
                 />
               ) : col.type === "textarea" ? (
                 <textarea
@@ -361,6 +366,7 @@ export default function TableForm({
                   onChange={(e) => setField(col.key, e.target.value)}
                   rows={3}
                   placeholder={col.placeholder || ""}
+                  disabled={readOnly}
                 />
               ) : (
                 <input
@@ -376,6 +382,7 @@ export default function TableForm({
                   onChange={(e) => setField(col.key, e.target.value)}
                   placeholder={col.placeholder || ""}
                   step={col.type === "number" ? "any" : undefined}
+                  disabled={readOnly}
                 />
               )}
             </div>
@@ -387,6 +394,7 @@ export default function TableForm({
           value={jsonText}
           onChange={(e) => setJsonText(e.target.value)}
           rows={Math.max(8, (schema.length * 1.2) | 0)}
+          disabled={readOnly}
         />
       )}
 
@@ -396,16 +404,18 @@ export default function TableForm({
         </div>
       )}
 
-      <div className="table-form-actions">
-        <button className="btn btn-sm btn-success" onClick={handleSubmit}>
-          {submitLabel}
-        </button>
-        {onCancel && (
-          <button className="btn btn-sm btn-secondary" onClick={handleCancel}>
-            Hủy
+      {!readOnly && (
+        <div className="table-form-actions">
+          <button className="btn btn-sm btn-success" onClick={handleSubmit}>
+            {submitLabel}
           </button>
-        )}
-      </div>
+          {onCancel && (
+            <button className="btn btn-sm btn-secondary" onClick={handleCancel}>
+              Hủy
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

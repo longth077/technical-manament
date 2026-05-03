@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Column schema for each entity.
  * Each entry is { key, label, type, options?, placeholder?, enumType? }.
  *   type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'enum_select'
@@ -62,7 +62,7 @@ export const ENTITY_SCHEMAS = {
   ],
 
   warehouse_images: [
-    { key: "warehouse_id", label: "ID Kho", type: "number" },
+    { key: "warehouse_id", label: "Kho", type: "number" },
     { key: "file_path", label: "Đường dẫn file", type: "text" },
     {
       key: "file_type_id",
@@ -74,7 +74,7 @@ export const ENTITY_SCHEMAS = {
   ],
 
   warehouse_equipments: [
-    { key: "warehouse_id", label: "ID Kho", type: "number" },
+    { key: "warehouse_id", label: "Kho", type: "number" },
     { key: "name", label: "Tên", type: "text" },
     { key: "model", label: "Mẫu", type: "text" },
     { key: "country", label: "Nước SX", type: "text" },
@@ -84,7 +84,7 @@ export const ENTITY_SCHEMAS = {
   ],
 
   warehouse_inspections: [
-    { key: "warehouse_id", label: "ID Kho", type: "number" },
+    { key: "warehouse_id", label: "Kho", type: "number" },
     { key: "date", label: "Ngày", type: "text" },
     { key: "inspector_name", label: "Người kiểm tra", type: "text" },
     { key: "inspector_position", label: "Chức vụ", type: "text" },
@@ -95,7 +95,7 @@ export const ENTITY_SCHEMAS = {
   ],
 
   warehouse_accesses: [
-    { key: "warehouse_id", label: "ID Kho", type: "number" },
+    { key: "warehouse_id", label: "Kho", type: "number" },
     { key: "date", label: "Ngày", type: "text" },
     { key: "visitor_name", label: "Tên khách", type: "text" },
     { key: "companion_count", label: "Số người đi cùng", type: "number" },
@@ -110,7 +110,7 @@ export const ENTITY_SCHEMAS = {
   ],
 
   warehouse_handovers: [
-    { key: "warehouse_id", label: "ID Kho", type: "number" },
+    { key: "warehouse_id", label: "Kho", type: "number" },
     { key: "equipment_name", label: "Tên trang bị", type: "text" },
     { key: "unit", label: "Đơn vị", type: "text" },
     { key: "handover_date", label: "Ngày giao", type: "text" },
@@ -126,7 +126,7 @@ export const ENTITY_SCHEMAS = {
   ],
 
   warehouse_exports: [
-    { key: "warehouse_id", label: "ID Kho", type: "number" },
+    { key: "warehouse_id", label: "Kho", type: "number" },
     { key: "receiver_name", label: "Người nhận", type: "text" },
     { key: "receiver_unit", label: "Đơn vị nhận", type: "text" },
     { key: "reason", label: "Lý do", type: "text" },
@@ -140,7 +140,7 @@ export const ENTITY_SCHEMAS = {
   ],
 
   warehouse_imports: [
-    { key: "warehouse_id", label: "ID Kho", type: "number" },
+    { key: "warehouse_id", label: "Kho", type: "number" },
     { key: "sender_name", label: "Người giao", type: "text" },
     { key: "sender_unit", label: "Đơn vị giao", type: "text" },
     { key: "reason", label: "Lý do", type: "text" },
@@ -154,7 +154,7 @@ export const ENTITY_SCHEMAS = {
   ],
 
   warehouse_lightnings: [
-    { key: "warehouse_id", label: "ID Kho", type: "number" },
+    { key: "warehouse_id", label: "Kho", type: "number" },
     { key: "date", label: "Ngày", type: "text" },
     { key: "weather", label: "Thời tiết", type: "text" },
     { key: "direct_rod1_rdo", label: "Cọc 1 - Rdo", type: "text" },

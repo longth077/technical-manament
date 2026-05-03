@@ -476,6 +476,141 @@
   padding: 0;
 }
 
+/* ===== Filter Bar ===== */
+.filter-bar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-bg);
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.filter-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #666);
+  font-weight: 500;
+}
+
+.filter-input {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  width: 130px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #4f8ef7);
+}
+
+.filter-select {
+  width: 160px;
+  cursor: pointer;
+}
+
+.filter-clear-btn {
+  align-self: flex-end;
+}
+
+.filter-result-count {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  padding: 0.4rem 1.25rem;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-bg);
+}
+
+/* ===== Unit Overview Page ===== */
+.overview-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.25rem;
+}
+
+.overview-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.overview-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.overview-card-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.overview-card-body {
+  padding: 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem 1.5rem;
+}
+
+.overview-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.overview-field-label {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.overview-field-value {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--color-border-light);
+  min-height: 1.8rem;
+}
+
+.overview-field-input {
+  font-size: 0.9rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.overview-field-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #4f8ef7);
+  box-shadow: 0 0 0 2px rgba(79, 142, 247, 0.15);
+}
+
+textarea.overview-field-input {
+  resize: vertical;
+  min-height: 70px;
+}
+
 /* ===== Data Table ===== */
 .table-wrap {
   overflow-x: auto;
@@ -673,6 +808,7 @@
   text-underline-offset: 2px;
   transition: color var(--transition);
 }
+
 .row-name-link:hover {
   color: var(--color-primary-dark);
 }
@@ -1264,6 +1400,7 @@
   color: var(--color-success);
   font-style: italic;
 }
+
 /* ===== Unified Staff Assignment Modal ===== */
 .modal-box-lg {
   max-width: 700px;
@@ -1298,7 +1435,10 @@
   transition: color 0.15s, border-color 0.15s;
 }
 
-.assign-tab-btn:hover { color: var(--color-primary); }
+.assign-tab-btn:hover {
+  color: var(--color-primary);
+}
+
 .assign-tab-btn.active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
@@ -1317,7 +1457,9 @@
   align-items: center;
 }
 
-.assign-add-row .form-select { flex: 1; }
+.assign-add-row .form-select {
+  flex: 1;
+}
 
 .assign-list {
   list-style: none;
@@ -1389,8 +1531,13 @@
   font-size: 0.85rem;
 }
 
-.assign-detail-table tr { border-bottom: 1px solid var(--color-border-light); }
-.assign-detail-table tr:last-child { border-bottom: none; }
+.assign-detail-table tr {
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.assign-detail-table tr:last-child {
+  border-bottom: none;
+}
 
 .assign-detail-label {
   padding: 0.2rem 0.75rem 0.2rem 0;
@@ -1421,7 +1568,10 @@
   gap: 0.5rem;
 }
 
-.co-assign-item.co-assign-me { color: var(--color-primary); font-weight: 600; }
+.co-assign-item.co-assign-me {
+  color: var(--color-primary);
+  font-weight: 600;
+}
 
 .co-assign-badge {
   font-size: 0.72rem;

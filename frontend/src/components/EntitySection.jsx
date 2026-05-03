@@ -1,9 +1,93 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Api } from "../services/api";
 import TableForm from "./TableForm";
 import StaffAssignModal from "./M2mPanel";
 import { getColumnLabel, ENTITY_SCHEMAS } from "../services/entitySchema";
-import { M2M_CONFIG } from "../services/entityConfig";
+import {
+  M2M_CONFIG,
+  ENTITY_FILTER_FIELDS,
+  FK_DISPLAY,
+} from "../services/entityConfig";
+
+/** Dropdown loaded from a sibling entity (FK exact-match, backend-filtered). */
+function EntitySelect({
+  lookupEntity,
+  lookupLabelField,
+  value,
+  onChange,
+  credential,
+}) {
+  const [options, setOptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    Api.listEntity(lookupEntity, credential)
+      .then((data) => {
+        if (active) setOptions(data.rows || []);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [lookupEntity, credential]);
+
+  return (
+    <select
+      className="filter-input filter-select"
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={loading}
+    >
+      <option value="">-- Tất cả --</option>
+      {options.map((row) => (
+        <option key={row.id} value={String(row.id)}>
+          {row[lookupLabelField] ?? row.id}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/** Dropdown loaded from enum constants (client-side exact-match). */
+function EnumFilterSelect({ enumType, value, onChange, credential }) {
+  const [options, setOptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    Api.listEnumByType(enumType, credential)
+      .then((data) => {
+        if (active) setOptions(data.rows || []);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [enumType, credential]);
+
+  return (
+    <select
+      className="filter-input filter-select"
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={loading}
+    >
+      <option value="">-- Tất cả --</option>
+      {options.map((opt) => (
+        <option key={opt.id} value={String(opt.id)}>
+          {opt.enum}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -31,13 +115,81 @@ export default function EntitySection({
   const [showM2mModal, setShowM2mModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // ── Filter state ──────────────────────────────────────────────────────────
+  const filterFields = useMemo(
+    () => ENTITY_FILTER_FIELDS[entity] || [],
+    [entity],
+  );
+  // entity_select → sent to backend (cause re-fetch)
+  const [backendFilters, setBackendFilters] = useState({});
+  // text / number / enum_filter → client-side only
+  const [clientFilters, setClientFilters] = useState({});
+
+  // Reset filters + loading during render when entity changes (avoids setState-in-effect).
+  const [prevEntity, setPrevEntity] = useState(entity);
+  if (prevEntity !== entity) {
+    setPrevEntity(entity);
+    setBackendFilters({});
+    setClientFilters({});
+    setLoading(true);
+  }
+
+  const hasActiveFilters =
+    Object.values(backendFilters).some((v) => v !== "") ||
+    Object.values(clientFilters).some((v) => v !== "");
+
+  const clearFilters = () => {
+    setBackendFilters({});
+    setClientFilters({});
+  };
+
+  const handleFilterChange = (field, val) => {
+    if (field.type === "entity_select") {
+      setLoading(true); // signal loading before the new backend filter triggers a re-fetch
+      setBackendFilters((prev) => ({ ...prev, [field.key]: val }));
+    } else {
+      setClientFilters((prev) => ({ ...prev, [field.key]: val }));
+    }
+  };
+
+  // ── FK display lookup ─────────────────────────────────────────────────────
+  const [fkLookups, setFkLookups] = useState({});
+
+  useEffect(() => {
+    if (!rows.length) return;
+    const fkCols = Object.keys(FK_DISPLAY).filter((col) => col in rows[0]);
+    if (!fkCols.length) return;
+    let active = true;
+    Promise.all(
+      fkCols.map((col) =>
+        Api.listEntity(FK_DISPLAY[col].entity, credential)
+          .then((data) => ({ col, rows: data.rows || [] }))
+          .catch(() => ({ col, rows: [] })),
+      ),
+    ).then((results) => {
+      if (!active) return;
+      const next = {};
+      for (const { col, rows: lr } of results) {
+        const map = {};
+        for (const r of lr)
+          map[String(r.id)] = r[FK_DISPLAY[col].labelField] ?? r.id;
+        next[col] = map;
+      }
+      setFkLookups((prev) => ({ ...prev, ...next }));
+    });
+    return () => {
+      active = false;
+    };
+  }, [rows, credential]);
+
   const loadRows = () => {
+    setLoading(true); // OK: called from event handler
     setLoadKey((k) => k + 1);
   };
 
   useEffect(() => {
     let active = true;
-    Api.listEntity(entity, credential)
+    Api.listEntity(entity, credential, backendFilters)
       .then((data) => {
         if (active) {
           setRows(data.rows || []);
@@ -55,7 +207,27 @@ export default function EntitySection({
     return () => {
       active = false;
     };
-  }, [entity, credential, loadKey]);
+  }, [entity, credential, loadKey, backendFilters]);
+
+  // ── Client-side filtered rows ─────────────────────────────────────────────
+  const displayedRows = useMemo(() => {
+    const active = filterFields.filter(
+      (f) =>
+        f.type !== "entity_select" &&
+        clientFilters[f.key] &&
+        clientFilters[f.key] !== "",
+    );
+    if (!active.length) return rows;
+    return rows.filter((row) =>
+      active.every((f) => {
+        if (f.type === "enum_filter")
+          return String(row[f.key]) === String(clientFilters[f.key]);
+        return String(row[f.key] ?? "")
+          .toLowerCase()
+          .includes(String(clientFilters[f.key]).toLowerCase());
+      }),
+    );
+  }, [rows, clientFilters, filterFields]);
 
   const createRow = async (payload) => {
     try {
@@ -114,6 +286,14 @@ export default function EntitySection({
 
   const columns = rows.length ? Object.keys(rows[0]) : [];
 
+  const getColHeader = (col) =>
+    FK_DISPLAY[col] ? FK_DISPLAY[col].columnLabel : getColumnLabel(entity, col);
+
+  const getCellDisplay = (col, val) =>
+    fkLookups[col]
+      ? (fkLookups[col][String(val)] ?? String(val ?? ""))
+      : String(val ?? "");
+
   const handleToggleCreate = () => {
     setError("");
     setEditingRow(null);
@@ -168,6 +348,49 @@ export default function EntitySection({
         {error && (
           <div className="error-msg" style={{ margin: "0.75rem 1.25rem 0" }}>
             {error}
+          </div>
+        )}
+
+        {/* --- FILTER BAR --- */}
+        {filterFields.length > 0 && (
+          <div className="filter-bar">
+            {filterFields.map((f) => (
+              <label key={f.key} className="filter-field">
+                <span className="filter-label">{f.label}</span>
+                {f.type === "entity_select" ? (
+                  <EntitySelect
+                    lookupEntity={f.lookupEntity}
+                    lookupLabelField={f.lookupLabelField}
+                    value={backendFilters[f.key] ?? ""}
+                    onChange={(val) => handleFilterChange(f, val)}
+                    credential={credential}
+                  />
+                ) : f.type === "enum_filter" ? (
+                  <EnumFilterSelect
+                    enumType={f.enumType}
+                    value={clientFilters[f.key] ?? ""}
+                    onChange={(val) => handleFilterChange(f, val)}
+                    credential={credential}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={clientFilters[f.key] ?? ""}
+                    onChange={(e) => handleFilterChange(f, e.target.value)}
+                    placeholder={f.label}
+                    className="filter-input"
+                  />
+                )}
+              </label>
+            ))}
+            {hasActiveFilters && (
+              <button
+                className="btn btn-sm btn-secondary filter-clear-btn"
+                onClick={clearFilters}
+              >
+                ✕ Xóa lọc
+              </button>
+            )}
           </div>
         )}
 
@@ -249,75 +472,84 @@ export default function EntitySection({
         {/* --- DATA TABLE --- */}
         {loading ? (
           <div className="loading-bar">Đang tải dữ liệu...</div>
-        ) : rows.length === 0 ? (
-          <div className="empty-state">Chưa có dữ liệu</div>
+        ) : displayedRows.length === 0 ? (
+          <div className="empty-state">
+            {rows.length > 0 ? "Không có kết quả phù hợp" : "Chưa có dữ liệu"}
+          </div>
         ) : (
           <div className="panel-body-flush">
+            {rows.length !== displayedRows.length && (
+              <div className="filter-result-count">
+                Hiển thị {displayedRows.length} / {rows.length} bản ghi
+              </div>
+            )}
             <div className="table-wrap">
               <table className="data-table">
                 <thead>
                   <tr>
                     {columns.map((c) => (
-                      <th key={c}>{getColumnLabel(entity, c)}</th>
+                      <th key={c}>{getColHeader(c)}</th>
                     ))}
                     {canEdit && <th>Thao tác</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => {
+                  {displayedRows.map((row) => {
                     const nameCol = ENTITY_SCHEMAS[entity]?.[0]?.key;
                     return (
-                    <tr
-                      key={row.id ?? JSON.stringify(row)}
-                      className={editingRow?.id === row.id ? "row-editing" : ""}
-                    >
-                      {columns.map((c) => (
-                        <td key={c}>
-                          {c === nameCol ? (
-                            <button
-                              className="row-name-link"
-                              onClick={() => {
-                                setEditingRow(row);
-                                setIsEditMode(false);
-                                setShowCreate(false);
-                                setCreateFormKey((k) => k + 1);
-                                setShowM2mModal(false);
-                                setError("");
-                              }}
-                            >
-                              {String(row[c] ?? "")}
-                            </button>
-                          ) : (
-                            String(row[c] ?? "")
-                          )}
-                        </td>
-                      ))}
-                      {canEdit && (
-                        <td>
-                          <div className="td-actions">
-                            <button
-                              className="btn btn-sm btn-outline"
-                              onClick={() => {
-                                setEditingRow(row);
-                                setIsEditMode(true);
-                                setShowM2mModal(false);
-                                setShowCreate(false);
-                                setCreateFormKey((k) => k + 1);
-                                setError("");
-                              }}
-                            >
-                              Sửa
-                            </button>
-                            <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => deleteRow(row.id)}
-                            >
-                              Xóa
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
+                      <tr
+                        key={row.id ?? JSON.stringify(row)}
+                        className={
+                          editingRow?.id === row.id ? "row-editing" : ""
+                        }
+                      >
+                        {columns.map((c) => (
+                          <td key={c}>
+                            {c === nameCol ? (
+                              <button
+                                className="row-name-link"
+                                onClick={() => {
+                                  setEditingRow(row);
+                                  setIsEditMode(false);
+                                  setShowCreate(false);
+                                  setCreateFormKey((k) => k + 1);
+                                  setShowM2mModal(false);
+                                  setError("");
+                                }}
+                              >
+                                {getCellDisplay(c, row[c])}
+                              </button>
+                            ) : (
+                              getCellDisplay(c, row[c])
+                            )}
+                          </td>
+                        ))}
+                        {canEdit && (
+                          <td>
+                            <div className="td-actions">
+                              <button
+                                className="btn btn-sm btn-outline"
+                                onClick={() => {
+                                  setEditingRow(row);
+                                  setIsEditMode(true);
+                                  setShowM2mModal(false);
+                                  setShowCreate(false);
+                                  setCreateFormKey((k) => k + 1);
+                                  setError("");
+                                }}
+                              >
+                                Sửa
+                              </button>
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => deleteRow(row.id)}
+                              >
+                                Xóa
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
                     );
                   })}
                 </tbody>

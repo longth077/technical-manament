@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import EntitySection from './components/EntitySection';
-import AdminDataTransfer from './components/AdminDataTransfer';
-import HomePage from './components/HomePage';
-import AccountPanel from './components/AccountPanel';
-import { Api } from './services/api';
-import { ENTITY_LABELS, ENTITY_ICONS } from './services/entityConfig';
-import './App.css';
+import { useEffect, useMemo, useState } from "react";
+import EntitySection from "./components/EntitySection";
+import AdminDataTransfer from "./components/AdminDataTransfer";
+import HomePage from "./components/HomePage";
+import AccountPanel from "./components/AccountPanel";
+import UnitOverviewPage from "./components/UnitOverviewPage";
+import { Api } from "./services/api";
+import { ENTITY_LABELS, ENTITY_ICONS } from "./services/entityConfig";
+import "./App.css";
 
 const entities = Object.keys(ENTITY_LABELS);
 
@@ -14,79 +15,104 @@ const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 
 function App() {
   /* ── Auth state ── */
-  const [authView, setAuthView] = useState('login'); // 'login' | 'signup'
-  const [loginId, setLoginId] = useState('');
-  const [loginPw, setLoginPw] = useState('');
-  const [signupFullName, setSignupFullName] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupUsername, setSignupUsername] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
-  const [authMessage, setAuthMessage] = useState({ text: '', success: false });
+  const [authView, setAuthView] = useState("login"); // 'login' | 'signup'
+  const [loginId, setLoginId] = useState("");
+  const [loginPw, setLoginPw] = useState("");
+  const [signupFullName, setSignupFullName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupUsername, setSignupUsername] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
+  const [authMessage, setAuthMessage] = useState({ text: "", success: false });
 
   /* ── App state ── */
-  const [credential, setCredential] = useState(localStorage.getItem('credential') || '');
+  const [credential, setCredential] = useState(
+    localStorage.getItem("credential") || "",
+  );
   const [user, setUser] = useState(null);
-  const [activeView, setActiveView] = useState('home'); // 'home' | entity key | 'transfer'
+  const [activeView, setActiveView] = useState("home"); // 'home' | entity key | 'transfer'
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [accountPanelOpen, setAccountPanelOpen] = useState(false);
-  const [sessionMsg, setSessionMsg] = useState('');
+  const [sessionMsg, setSessionMsg] = useState("");
 
-  const canEdit = useMemo(() => user && user.role !== 'readonly', [user]);
+  const canEdit = useMemo(() => user && user.role !== "readonly", [user]);
 
   /* ── Sign in ── */
   const signIn = async () => {
     if (!loginId || !loginPw) {
-      setAuthMessage({ text: 'Vui lòng nhập tên đăng nhập/email và mật khẩu', success: false });
+      setAuthMessage({
+        text: "Vui lòng nhập tên đăng nhập/email và mật khẩu",
+        success: false,
+      });
       return;
     }
     const encoded = btoa(`${loginId}:${loginPw}`);
     try {
       const data = await Api.me(encoded);
       setCredential(encoded);
-      localStorage.setItem('credential', encoded);
-      localStorage.setItem('loginTime', Date.now().toString());
+      localStorage.setItem("credential", encoded);
+      localStorage.setItem("loginTime", Date.now().toString());
       setUser(data.user);
-      setAuthMessage({ text: '', success: false });
-      setSessionMsg('');
+      setAuthMessage({ text: "", success: false });
+      setSessionMsg("");
     } catch (e) {
       setAuthMessage({ text: e.message, success: false });
     }
   };
 
   /* ── Sign out ── */
-  const signOut = (msg = '') => {
-    localStorage.removeItem('credential');
-    localStorage.removeItem('loginTime');
-    setCredential('');
+  const signOut = (msg = "") => {
+    localStorage.removeItem("credential");
+    localStorage.removeItem("loginTime");
+    setCredential("");
     setUser(null);
-    setActiveView('home');
+    setActiveView("home");
     setAccountPanelOpen(false);
     setSessionMsg(msg);
   };
 
   /* ── Sign up ── */
   const signup = async () => {
-    if (!signupUsername || !signupEmail || !signupPassword || !signupConfirmPassword || !signupFullName) {
-      setAuthMessage({ text: 'Vui lòng điền đầy đủ tất cả các trường', success: false });
+    if (
+      !signupUsername ||
+      !signupEmail ||
+      !signupPassword ||
+      !signupConfirmPassword ||
+      !signupFullName
+    ) {
+      setAuthMessage({
+        text: "Vui lòng điền đầy đủ tất cả các trường",
+        success: false,
+      });
       return;
     }
     if (signupPassword.length < 8) {
-      setAuthMessage({ text: 'Mật khẩu phải có ít nhất 8 ký tự', success: false });
+      setAuthMessage({
+        text: "Mật khẩu phải có ít nhất 8 ký tự",
+        success: false,
+      });
       return;
     }
     if (signupPassword !== signupConfirmPassword) {
-      setAuthMessage({ text: 'Mật khẩu xác nhận không khớp', success: false });
+      setAuthMessage({ text: "Mật khẩu xác nhận không khớp", success: false });
       return;
     }
     try {
-      await Api.signup({ username: signupUsername, email: signupEmail, password: signupPassword, fullName: signupFullName });
-      setAuthMessage({ text: 'Đăng ký thành công! Vui lòng chờ quản trị viên duyệt tài khoản.', success: true });
-      setSignupFullName('');
-      setSignupEmail('');
-      setSignupUsername('');
-      setSignupPassword('');
-      setSignupConfirmPassword('');
+      await Api.signup({
+        username: signupUsername,
+        email: signupEmail,
+        password: signupPassword,
+        fullName: signupFullName,
+      });
+      setAuthMessage({
+        text: "Đăng ký thành công! Vui lòng chờ quản trị viên duyệt tài khoản.",
+        success: true,
+      });
+      setSignupFullName("");
+      setSignupEmail("");
+      setSignupUsername("");
+      setSignupPassword("");
+      setSignupConfirmPassword("");
     } catch (e) {
       setAuthMessage({ text: e.message, success: false });
     }
@@ -104,16 +130,21 @@ function App() {
         if (!active) return;
         signOut();
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [credential]);
 
   /* ── Session timeout: check every minute ── */
   useEffect(() => {
     if (!credential) return;
     const check = () => {
-      const loginTime = localStorage.getItem('loginTime');
-      if (loginTime && Date.now() - parseInt(loginTime, 10) > SESSION_DURATION_MS) {
-        signOut('Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.');
+      const loginTime = localStorage.getItem("loginTime");
+      if (
+        loginTime &&
+        Date.now() - parseInt(loginTime, 10) > SESSION_DURATION_MS
+      ) {
+        signOut("Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.");
       }
     };
     check();
@@ -132,11 +163,9 @@ function App() {
             <p>Hệ thống Quản lý Kỹ thuật</p>
           </div>
 
-          {sessionMsg && (
-            <div className="auth-message error">{sessionMsg}</div>
-          )}
+          {sessionMsg && <div className="auth-message error">{sessionMsg}</div>}
 
-          {authView === 'login' ? (
+          {authView === "login" ? (
             /* ── Login form ── */
             <div className="auth-card">
               <h3>Đăng nhập</h3>
@@ -147,7 +176,7 @@ function App() {
                   placeholder="Nhập tên đăng nhập hoặc email"
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && signIn()}
+                  onKeyDown={(e) => e.key === "Enter" && signIn()}
                   autoFocus
                 />
               </div>
@@ -159,11 +188,13 @@ function App() {
                   placeholder="Nhập mật khẩu"
                   value={loginPw}
                   onChange={(e) => setLoginPw(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && signIn()}
+                  onKeyDown={(e) => e.key === "Enter" && signIn()}
                 />
               </div>
               {authMessage.text && (
-                <div className={`auth-message ${authMessage.success ? 'success' : 'error'}`}>
+                <div
+                  className={`auth-message ${authMessage.success ? "success" : "error"}`}
+                >
                   {authMessage.text}
                 </div>
               )}
@@ -175,9 +206,9 @@ function App() {
                 <button
                   className="auth-link"
                   onClick={() => {
-                    setAuthView('signup');
-                    setAuthMessage({ text: '', success: false });
-                    setSignupConfirmPassword('');
+                    setAuthView("signup");
+                    setAuthMessage({ text: "", success: false });
+                    setSignupConfirmPassword("");
                   }}
                 >
                   Đăng ký ngay
@@ -190,26 +221,56 @@ function App() {
               <h3>Đăng ký tài khoản</h3>
               <div className="form-group">
                 <label className="form-label">Họ và tên</label>
-                <input className="form-input" placeholder="Nhập họ và tên" value={signupFullName} onChange={(e) => setSignupFullName(e.target.value)} />
+                <input
+                  className="form-input"
+                  placeholder="Nhập họ và tên"
+                  value={signupFullName}
+                  onChange={(e) => setSignupFullName(e.target.value)}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Tên đăng nhập</label>
-                <input className="form-input" placeholder="Chọn tên đăng nhập" value={signupUsername} onChange={(e) => setSignupUsername(e.target.value)} />
+                <input
+                  className="form-input"
+                  placeholder="Chọn tên đăng nhập"
+                  value={signupUsername}
+                  onChange={(e) => setSignupUsername(e.target.value)}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Email</label>
-                <input className="form-input" type="email" placeholder="Nhập email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} />
+                <input
+                  className="form-input"
+                  type="email"
+                  placeholder="Nhập email"
+                  value={signupEmail}
+                  onChange={(e) => setSignupEmail(e.target.value)}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Mật khẩu (ít nhất 8 ký tự)</label>
-                <input className="form-input" type="password" placeholder="Nhập mật khẩu" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} />
+                <input
+                  className="form-input"
+                  type="password"
+                  placeholder="Nhập mật khẩu"
+                  value={signupPassword}
+                  onChange={(e) => setSignupPassword(e.target.value)}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Xác nhận mật khẩu</label>
-                <input className="form-input" type="password" placeholder="Nhập lại mật khẩu" value={signupConfirmPassword} onChange={(e) => setSignupConfirmPassword(e.target.value)} />
+                <input
+                  className="form-input"
+                  type="password"
+                  placeholder="Nhập lại mật khẩu"
+                  value={signupConfirmPassword}
+                  onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                />
               </div>
               {authMessage.text && (
-                <div className={`auth-message ${authMessage.success ? 'success' : 'error'}`}>
+                <div
+                  className={`auth-message ${authMessage.success ? "success" : "error"}`}
+                >
                   {authMessage.text}
                 </div>
               )}
@@ -221,9 +282,9 @@ function App() {
                 <button
                   className="auth-link"
                   onClick={() => {
-                    setAuthView('login');
-                    setAuthMessage({ text: '', success: false });
-                    setSignupConfirmPassword('');
+                    setAuthView("login");
+                    setAuthMessage({ text: "", success: false });
+                    setSignupConfirmPassword("");
                   }}
                 >
                   Đăng nhập
@@ -275,34 +336,45 @@ function App() {
       {/* Body: sidebar + content */}
       <div className="app-body">
         {/* Sidebar */}
-        <nav className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+        <nav className={`sidebar ${sidebarOpen ? "open" : "closed"}`}>
           <div className="sidebar-section-title">Trang chủ</div>
           <button
-            className={`sidebar-item ${activeView === 'home' ? 'active' : ''}`}
-            onClick={() => setActiveView('home')}
+            className={`sidebar-item ${activeView === "home" ? "active" : ""}`}
+            onClick={() => setActiveView("home")}
           >
             <span className="sidebar-icon">🏠</span>
             <span className="sidebar-label">Trang chủ</span>
+          </button>
+
+          <div className="sidebar-section-title">Thông tin</div>
+          <button
+            className={`sidebar-item ${activeView === "unit_overview" ? "active" : ""}`}
+            onClick={() => setActiveView("unit_overview")}
+          >
+            <span className="sidebar-icon">🏢</span>
+            <span className="sidebar-label">Thông tin đơn vị</span>
           </button>
 
           <div className="sidebar-section-title">Dữ liệu</div>
           {entities.map((entity) => (
             <button
               key={entity}
-              className={`sidebar-item ${activeView === entity ? 'active' : ''}`}
+              className={`sidebar-item ${activeView === entity ? "active" : ""}`}
               onClick={() => setActiveView(entity)}
             >
-              <span className="sidebar-icon">{ENTITY_ICONS[entity] || '📋'}</span>
+              <span className="sidebar-icon">
+                {ENTITY_ICONS[entity] || "📋"}
+              </span>
               <span className="sidebar-label">{ENTITY_LABELS[entity]}</span>
             </button>
           ))}
 
-          {user.role === 'admin' && (
+          {user.role === "admin" && (
             <>
               <div className="sidebar-section-title">Quản trị</div>
               <button
-                className={`sidebar-item ${activeView === 'transfer' ? 'active' : ''}`}
-                onClick={() => setActiveView('transfer')}
+                className={`sidebar-item ${activeView === "transfer" ? "active" : ""}`}
+                onClick={() => setActiveView("transfer")}
               >
                 <span className="sidebar-icon">📦</span>
                 <span className="sidebar-label">Nhập/Xuất dữ liệu</span>
@@ -313,8 +385,11 @@ function App() {
 
         {/* Content */}
         <main className="content-area">
-          {activeView === 'home' && (
-            <HomePage user={user} onNavigate={(entity) => setActiveView(entity)} />
+          {activeView === "home" && (
+            <HomePage
+              user={user}
+              onNavigate={(entity) => setActiveView(entity)}
+            />
           )}
 
           {entities.includes(activeView) && (
@@ -326,7 +401,11 @@ function App() {
             />
           )}
 
-          {activeView === 'transfer' && user.role === 'admin' && (
+          {activeView === "unit_overview" && (
+            <UnitOverviewPage credential={credential} canEdit={canEdit} />
+          )}
+
+          {activeView === "transfer" && user.role === "admin" && (
             <AdminDataTransfer credential={credential} />
           )}
         </main>

@@ -50,6 +50,13 @@ function createRoutes({
   );
 
   router.get(
+    "/admin/reports/excel",
+    authMiddleware,
+    requireRole("admin", "user"),
+    adminController.exportAllReports,
+  );
+
+  router.get(
     "/admin/export/sql",
     authMiddleware,
     requireRole("admin"),
@@ -76,6 +83,20 @@ function createRoutes({
     body("base64").isString(),
     validate,
     adminController.importExcel,
+  );
+  router.get(
+    "/admin/export/csv",
+    authMiddleware,
+    requireRole("admin"),
+    adminController.exportCsv,
+  );
+  router.post(
+    "/admin/import/csv",
+    authMiddleware,
+    requireRole("admin"),
+    body("base64").isString(),
+    validate,
+    adminController.importCsv,
   );
 
   router.get("/entities/:entity", authMiddleware, entityController.list);

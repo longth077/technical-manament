@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import EntitySection from "./components/EntitySection";
 import AdminDataTransfer from "./components/AdminDataTransfer";
+import AdminReports from "./components/AdminReports";
 import HomePage from "./components/HomePage";
 import AccountPanel from "./components/AccountPanel";
 import UnitOverviewPage from "./components/UnitOverviewPage";
@@ -30,6 +31,9 @@ function App() {
     localStorage.getItem("credential") || "",
   );
   const [user, setUser] = useState(null);
+  const [sessionRestoring, setSessionRestoring] = useState(
+    () => !!localStorage.getItem("credential"),
+  );
   const [activeView, setActiveView] = useState("home"); // 'home' | entity key | 'transfer'
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [accountPanelOpen, setAccountPanelOpen] = useState(false);
@@ -120,7 +124,10 @@ function App() {
 
   /* ── Session restore on mount ── */
   useEffect(() => {
-    if (!credential) return;
+    if (!credential) {
+      setSessionRestoring(false);
+      return;
+    }
     let active = true;
     Api.me(credential)
       .then((data) => {
@@ -129,6 +136,9 @@ function App() {
       .catch(() => {
         if (!active) return;
         signOut();
+      })
+      .finally(() => {
+        if (active) setSessionRestoring(false);
       });
     return () => {
       active = false;
@@ -153,6 +163,8 @@ function App() {
   }, [credential]);
 
   /* ── Auth pages ── */
+  if (sessionRestoring) return null;
+
   if (!user) {
     return (
       <div className="auth-page">
@@ -369,6 +381,19 @@ function App() {
             </button>
           ))}
 
+          {user.role === "admin" || user.role === "user" ? (
+            <>
+              <div className="sidebar-section-title">Báo cáo</div>
+              <button
+                className={`sidebar-item ${activeView === "reports" ? "active" : ""}`}
+                onClick={() => setActiveView("reports")}
+              >
+                <span className="sidebar-icon">📊</span>
+                <span className="sidebar-label">Xuất báo cáo Excel</span>
+              </button>
+            </>
+          ) : null}
+
           {user.role === "admin" && (
             <>
               <div className="sidebar-section-title">Quản trị</div>
@@ -404,6 +429,11 @@ function App() {
           {activeView === "unit_overview" && (
             <UnitOverviewPage credential={credential} canEdit={canEdit} />
           )}
+
+          {activeView === "reports" &&
+            (user.role === "admin" || user.role === "user") && (
+              <AdminReports credential={credential} />
+            )}
 
           {activeView === "transfer" && user.role === "admin" && (
             <AdminDataTransfer credential={credential} />

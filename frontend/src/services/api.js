@@ -57,8 +57,15 @@ export const Api = {
     }),
   deleteEntity: (entity, id, credential) =>
     request(`/entities/${entity}/${id}`, { method: "DELETE", credential }),
-  exportEntityExcel: (entity, credential) =>
-    request(`/reports/${entity}/excel`, { credential, responseType: "blob" }),
+  exportEntityExcel: (entity, credential, params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    const path = qs
+      ? `/reports/${entity}/excel?${qs}`
+      : `/reports/${entity}/excel`;
+    return request(path, { credential, responseType: "blob" });
+  },
+  exportAllReports: (credential) =>
+    request("/admin/reports/excel", { credential, responseType: "blob" }),
 
   listEnumByType: (type, credential) =>
     request(`/enums/${type}?limit=500`, { credential }),
@@ -85,8 +92,18 @@ export const Api = {
 
   exportAllExcel: (credential) =>
     request("/admin/export/excel", { credential, responseType: "blob" }),
+  exportAllSql: (credential) =>
+    request("/admin/export/sql", { credential, responseType: "blob" }),
+  exportAllCsv: (credential) =>
+    request("/admin/export/csv", { credential, responseType: "blob" }),
   importExcel: (base64, credential) =>
     request("/admin/import/excel", {
+      method: "POST",
+      credential,
+      body: { base64 },
+    }),
+  importCsv: (base64, credential) =>
+    request("/admin/import/csv", {
       method: "POST",
       credential,
       body: { base64 },

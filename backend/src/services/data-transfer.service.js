@@ -1,16 +1,72 @@
-const ExcelJS = require('exceljs');
-const { sequelize } = require('../models');
-const { ENTITY_NAMES } = require('../utils/entities');
+const ExcelJS = require("exceljs");
+const AdmZip = require("adm-zip");
+const { sequelize } = require("../models");
+const { ENTITY_NAMES } = require("../utils/entities");
+
+// CSV helpers
+const csvCell = (value) => {
+  if (value === null || value === undefined) return "";
+  const str = String(value);
+  if (
+    str.includes('"') ||
+    str.includes(",") ||
+    str.includes("\n") ||
+    str.includes("\r")
+  ) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+};
+
+const parseCsvLine = (line) => {
+  const cells = [];
+  let current = "";
+  let inQuote = false;
+  let i = 0;
+  while (i < line.length) {
+    const ch = line[i];
+    if (inQuote) {
+      if (ch === '"' && line[i + 1] === '"') {
+        current += '"';
+        i += 2;
+        continue;
+      }
+      if (ch === '"') {
+        inQuote = false;
+        i++;
+        continue;
+      }
+      current += ch;
+      i++;
+    } else {
+      if (ch === '"') {
+        inQuote = true;
+        i++;
+        continue;
+      }
+      if (ch === ",") {
+        cells.push(current);
+        current = "";
+        i++;
+        continue;
+      }
+      current += ch;
+      i++;
+    }
+  }
+  cells.push(current);
+  return cells;
+};
 
 const sqlValue = (value) => {
-  if (value === null || value === undefined) return 'NULL';
-  if (typeof value === 'number') return String(value);
-  return `'${String(value).replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'`;
+  if (value === null || value === undefined) return "NULL";
+  if (typeof value === "number") return String(value);
+  return `'${String(value).replaceAll("\\", "\\\\").replaceAll("'", "\\'")}'`;
 };
 
 const parseSqlValues = (input) => {
   const parts = [];
-  let current = '';
+  let current = "";
   let inQuote = false;
   let escaped = false;
 
@@ -20,7 +76,7 @@ const parseSqlValues = (input) => {
       escaped = false;
       continue;
     }
-    if (ch === '\\') {
+    if (ch === "\\") {
       current += ch;
       escaped = true;
       continue;
@@ -30,9 +86,9 @@ const parseSqlValues = (input) => {
       current += ch;
       continue;
     }
-    if (ch === ',' && !inQuote) {
+    if (ch === "," && !inQuote) {
       parts.push(current.trim());
-      current = '';
+      current = "";
       continue;
     }
     current += ch;
@@ -42,9 +98,9 @@ const parseSqlValues = (input) => {
 };
 
 const parseSqlLiteral = (literal) => {
-  if (literal === 'NULL') return null;
+  if (literal === "NULL") return null;
   if (literal.startsWith("'") && literal.endsWith("'")) {
-    return literal.slice(1, -1).replaceAll("\\'", "'").replaceAll('\\\\', '\\');
+    return literal.slice(1, -1).replaceAll("\\'", "'").replaceAll("\\\\", "\\");
   }
   const num = Number(literal);
   return Number.isNaN(num) ? literal : num;
@@ -56,7 +112,7 @@ class DataTransferService {
   }
 
   async exportSql() {
-    const lines = ['SET FOREIGN_KEY_CHECKS=0;'];
+    const lines = ["SET FOREIGN_KEY_CHECKS=0;"];
 
     for (const name of ENTITY_NAMES) {
       const rows = await this.models[name].findAll({ raw: true });
@@ -64,25 +120,31 @@ class DataTransferService {
       for (const row of rows) {
         const keys = Object.keys(row);
         const values = keys.map((k) => sqlValue(row[k]));
-        lines.push(`INSERT INTO ${name} (${keys.join(',')}) VALUES (${values.join(',')});`);
+        lines.push(
+          `INSERT INTO ${name} (${keys.join(",")}) VALUES (${values.join(",")});`,
+        );
       }
     }
 
-    lines.push('SET FOREIGN_KEY_CHECKS=1;');
-    return lines.join('\n');
+    lines.push("SET FOREIGN_KEY_CHECKS=1;");
+    return lines.join("\n");
   }
 
   async exportExcel(entities = ENTITY_NAMES) {
     const workbook = new ExcelJS.Workbook();
 
     for (const name of entities) {
-      if (!this.models[name]) continue;
+      const model = this.models[name];
+      if (!model) continue;
       const sheet = workbook.addWorksheet(name.substring(0, 31));
-      const rows = await this.models[name].findAll({ raw: true, order: [['id', 'ASC']] });
-      if (!rows.length) continue;
-      const headers = Object.keys(rows[0]);
+      const rows = await model.findAll({ raw: true, order: [["id", "ASC"]] });
+      // Always write headers — fall back to model attribute names for empty tables
+      // so the import can still truncate them during a full restore.
+      const headers = rows.length
+        ? Object.keys(rows[0])
+        : Object.keys(model.rawAttributes);
       sheet.columns = headers.map((key) => ({ header: key, key, width: 20 }));
-      sheet.addRows(rows);
+      if (rows.length) sheet.addRows(rows);
     }
 
     return workbook.xlsx.writeBuffer();
@@ -90,46 +152,69 @@ class DataTransferService {
 
   async importSql(sqlText) {
     const lines = sqlText
-      .split('\n')
+      .split("\n")
       .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith('--') && !line.startsWith('SET FOREIGN_KEY_CHECKS'));
+      .filter(
+        (line) =>
+          line &&
+          !line.startsWith("--") &&
+          !line.startsWith("SET FOREIGN_KEY_CHECKS"),
+      );
 
     const tx = await sequelize.transaction();
     try {
       for (const line of lines) {
-        if (line.startsWith('DELETE FROM ') && line.endsWith(';')) {
-          const entity = line.slice('DELETE FROM '.length, -1).trim();
-          if (!ENTITY_NAMES.includes(entity)) throw new Error(`Unsupported entity: ${entity}`);
-          await this.models[entity].destroy({ where: {}, truncate: true, transaction: tx, force: true });
+        if (line.startsWith("DELETE FROM ") && line.endsWith(";")) {
+          const entity = line.slice("DELETE FROM ".length, -1).trim();
+          if (!ENTITY_NAMES.includes(entity))
+            throw new Error(`Unsupported entity: ${entity}`);
+          await this.models[entity].destroy({
+            where: {},
+            truncate: true,
+            transaction: tx,
+            force: true,
+          });
           continue;
         }
 
-        if (line.startsWith('INSERT INTO ') && line.endsWith(';')) {
-          const payloadLine = line.slice('INSERT INTO '.length, -1);
-          const firstParen = payloadLine.indexOf('(');
-          const valuesToken = ') VALUES (';
+        if (line.startsWith("INSERT INTO ") && line.endsWith(";")) {
+          const payloadLine = line.slice("INSERT INTO ".length, -1);
+          const firstParen = payloadLine.indexOf("(");
+          const valuesToken = ") VALUES (";
           const valuesPos = payloadLine.indexOf(valuesToken);
-          const lastParen = payloadLine.lastIndexOf(')');
+          const lastParen = payloadLine.lastIndexOf(")");
 
-          if (firstParen <= 0 || valuesPos <= firstParen || lastParen <= valuesPos) {
-            throw new Error('Invalid SQL import format');
+          if (
+            firstParen <= 0 ||
+            valuesPos <= firstParen ||
+            lastParen <= valuesPos
+          ) {
+            throw new Error("Invalid SQL import format");
           }
 
           const entity = payloadLine.slice(0, firstParen).trim();
-          if (!ENTITY_NAMES.includes(entity)) throw new Error(`Unsupported entity: ${entity}`);
+          if (!ENTITY_NAMES.includes(entity))
+            throw new Error(`Unsupported entity: ${entity}`);
 
-          const rawColumns = payloadLine.slice(firstParen + 1, valuesPos).trim();
-          const rawValues = payloadLine.slice(valuesPos + valuesToken.length, lastParen).trim();
+          const rawColumns = payloadLine
+            .slice(firstParen + 1, valuesPos)
+            .trim();
+          const rawValues = payloadLine
+            .slice(valuesPos + valuesToken.length, lastParen)
+            .trim();
 
-          const columns = rawColumns.split(',').map((c) => c.trim());
+          const columns = rawColumns.split(",").map((c) => c.trim());
           const values = parseSqlValues(rawValues).map(parseSqlLiteral);
-          if (columns.length !== values.length) throw new Error('Invalid SQL import format');
-          const payload = Object.fromEntries(columns.map((col, index) => [col, values[index]]));
+          if (columns.length !== values.length)
+            throw new Error("Invalid SQL import format");
+          const payload = Object.fromEntries(
+            columns.map((col, index) => [col, values[index]]),
+          );
           await this.models[entity].create(payload, { transaction: tx });
           continue;
         }
 
-        throw new Error('Only exported SQL format is supported for import');
+        throw new Error("Only exported SQL format is supported for import");
       }
 
       await tx.commit();
@@ -142,7 +227,7 @@ class DataTransferService {
 
   async importExcel(base64Content) {
     const workbook = new ExcelJS.Workbook();
-    const content = Buffer.from(base64Content, 'base64');
+    const content = Buffer.from(base64Content, "base64");
     await workbook.xlsx.load(content);
 
     const tx = await sequelize.transaction();
@@ -164,7 +249,94 @@ class DataTransferService {
           rows.push(payload);
         });
 
-        await model.destroy({ where: {}, truncate: true, transaction: tx, force: true });
+        await model.destroy({
+          where: {},
+          truncate: true,
+          transaction: tx,
+          force: true,
+        });
+        if (rows.length) {
+          await model.bulkCreate(rows, { transaction: tx });
+        }
+      }
+
+      await tx.commit();
+      return { success: true };
+    } catch (error) {
+      await tx.rollback();
+      throw error;
+    }
+  }
+  async exportCsv() {
+    const zip = new AdmZip();
+
+    for (const name of ENTITY_NAMES) {
+      const rows = await this.models[name].findAll({
+        raw: true,
+        order: [["id", "ASC"]],
+      });
+      if (!rows.length) {
+        zip.addFile(`${name}.csv`, Buffer.from("", "utf8"));
+        continue;
+      }
+      const headers = Object.keys(rows[0]);
+      const lines = [headers.map(csvCell).join(",")];
+      for (const row of rows) {
+        lines.push(headers.map((h) => csvCell(row[h])).join(","));
+      }
+      zip.addFile(`${name}.csv`, Buffer.from(lines.join("\r\n"), "utf8"));
+    }
+
+    return zip.toBuffer();
+  }
+
+  async importCsv(zipBase64) {
+    const zipBuffer = Buffer.from(zipBase64, "base64");
+    const zip = new AdmZip(zipBuffer);
+    const entries = zip
+      .getEntries()
+      .filter((e) => e.entryName.endsWith(".csv"));
+
+    const tx = await sequelize.transaction();
+    try {
+      for (const entry of entries) {
+        const entityName = entry.entryName.replace(/\.csv$/i, "");
+        const model = this.models[entityName];
+        if (!model || !ENTITY_NAMES.includes(entityName)) continue;
+
+        const raw = entry
+          .getData()
+          .toString("utf8")
+          .replace(/\r\n/g, "\n")
+          .replace(/\r/g, "\n");
+        const lines = raw.split("\n").filter((l) => l.trim() !== "");
+        if (lines.length < 2) {
+          await model.destroy({
+            where: {},
+            truncate: true,
+            transaction: tx,
+            force: true,
+          });
+          continue;
+        }
+
+        const headers = parseCsvLine(lines[0]);
+        const rows = lines.slice(1).map((line) => {
+          const values = parseCsvLine(line);
+          const payload = {};
+          headers.forEach((h, i) => {
+            const v = values[i] ?? "";
+            payload[h] = v === "" ? null : v;
+          });
+          return payload;
+        });
+
+        await model.destroy({
+          where: {},
+          truncate: true,
+          transaction: tx,
+          force: true,
+        });
         if (rows.length) {
           await model.bulkCreate(rows, { transaction: tx });
         }

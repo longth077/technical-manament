@@ -9,6 +9,7 @@ const AdminService = require("./services/admin.service");
 const EntityService = require("./services/entity.service");
 const EnumService = require("./services/enum.service");
 const DataTransferService = require("./services/data-transfer.service");
+const ReportService = require("./services/report.service");
 const AuthController = require("./controllers/auth.controller");
 const AdminController = require("./controllers/admin.controller");
 const EntityController = require("./controllers/entity.controller");
@@ -34,15 +35,18 @@ async function createApp() {
   const entityService = new EntityService(entityRepositories);
   const enumService = new EnumService(models.enum_constants);
   const dataTransferService = new DataTransferService(models);
+  const reportService = new ReportService(models);
 
   const authController = new AuthController(authService);
   const adminController = new AdminController(
     adminService,
     dataTransferService,
+    reportService,
   );
   const entityController = new EntityController(
     entityService,
     dataTransferService,
+    reportService,
   );
   const enumController = new EnumController(enumService);
 

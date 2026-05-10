@@ -1,12 +1,16 @@
 class EntityController {
-  constructor(entityService, dataTransferService) {
+  constructor(entityService, dataTransferService, reportService) {
     this.entityService = entityService;
     this.dataTransferService = dataTransferService;
+    this.reportService = reportService;
   }
 
   list = async (req, res, next) => {
     try {
-      const result = await this.entityService.list(req.params.entity, req.query);
+      const result = await this.entityService.list(
+        req.params.entity,
+        req.query,
+      );
       res.json(result);
     } catch (error) {
       next(error);
@@ -47,14 +51,25 @@ class EntityController {
   reportExcel = async (req, res, next) => {
     try {
       const entity = req.params.entity;
-      const buffer = await this.dataTransferService.exportExcel([entity]);
+      const filters = req.query || {};
+      const buffer = await this.reportService.exportEntityExcel(
+        entity,
+        filters,
+      );
+
+      const { ENTITY_LABELS } = require("../utils/report-labels");
+      const label = ENTITY_LABELS[entity] || entity;
+      const now = new Date();
+      const dateTag = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+      const filename = `bao-cao-${entity}-${dateTag}.xlsx`;
+
       res.setHeader(
         "Content-Type",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       );
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${entity}-report.xlsx"`,
+        `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
       );
       res.send(Buffer.from(buffer));
     } catch (error) {

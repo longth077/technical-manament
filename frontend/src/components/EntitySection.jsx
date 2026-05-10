@@ -8,6 +8,7 @@ import {
   ENTITY_FILTER_FIELDS,
   FK_DISPLAY,
   KEEPER_COLUMN_CONFIG,
+  ENTITY_LABELS,
 } from "../services/entityConfig";
 
 /** Dropdown loaded from a sibling entity (FK exact-match, backend-filtered). */
@@ -318,12 +319,21 @@ export default function EntitySection({
     }
   };
 
+  const [exporting, setExporting] = useState(false);
+
   const exportExcel = async () => {
+    if (exporting) return;
+    setExporting(true);
     try {
-      const blob = await Api.exportEntityExcel(entity, credential);
-      downloadBlob(blob, `${entity}-report.xlsx`);
+      const blob = await Api.exportEntityExcel(entity, credential, backendFilters);
+      const label = ENTITY_LABELS[entity] || entity;
+      const now = new Date();
+      const dateTag = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+      downloadBlob(blob, `bao-cao-${label}-${dateTag}.xlsx`);
     } catch (e) {
       setError(e.message);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -389,8 +399,8 @@ export default function EntitySection({
         <div className="panel-header">
           <h3>{entityLabel || entity}</h3>
           <div className="panel-header-actions">
-            <button className="btn btn-sm btn-outline" onClick={exportExcel}>
-              📊 Xuất Excel
+            <button className="btn btn-sm btn-outline" onClick={exportExcel} disabled={exporting}>
+              {exporting ? '⏳ Đang xuất...' : '📊 Xuất Excel'}
             </button>
             <button className="btn btn-sm btn-outline" onClick={loadRows}>
               ↻ Làm mới

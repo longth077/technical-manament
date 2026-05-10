@@ -1,7 +1,8 @@
 class AdminController {
-  constructor(adminService, dataTransferService) {
+  constructor(adminService, dataTransferService, reportService) {
     this.adminService = adminService;
     this.dataTransferService = dataTransferService;
+    this.reportService = reportService;
   }
 
   getUsers = async (_req, res, next) => {
@@ -25,7 +26,7 @@ class AdminController {
   approveUser = async (req, res, next) => {
     try {
       await this.adminService.approveUser(req.params.userId);
-      res.json({ message: 'User approved' });
+      res.json({ message: "User approved" });
     } catch (error) {
       next(error);
     }
@@ -34,7 +35,7 @@ class AdminController {
   updateRole = async (req, res, next) => {
     try {
       await this.adminService.updateRole(req.params.userId, req.body.role);
-      res.json({ message: 'Role updated' });
+      res.json({ message: "Role updated" });
     } catch (error) {
       next(error);
     }
@@ -43,7 +44,7 @@ class AdminController {
   deleteUser = async (req, res, next) => {
     try {
       await this.adminService.deleteUser(req.params.userId);
-      res.json({ message: 'User deleted' });
+      res.json({ message: "User deleted" });
     } catch (error) {
       next(error);
     }
@@ -52,8 +53,11 @@ class AdminController {
   exportSql = async (_req, res, next) => {
     try {
       const sql = await this.dataTransferService.exportSql();
-      res.setHeader('Content-Type', 'application/sql');
-      res.setHeader('Content-Disposition', 'attachment; filename="technical-management.sql"');
+      res.setHeader("Content-Type", "application/sql");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="technical-management.sql"',
+      );
       res.send(sql);
     } catch (error) {
       next(error);
@@ -63,8 +67,14 @@ class AdminController {
   exportExcel = async (_req, res, next) => {
     try {
       const buffer = await this.dataTransferService.exportExcel();
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename="technical-management.xlsx"');
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="technical-management.xlsx"',
+      );
       res.send(Buffer.from(buffer));
     } catch (error) {
       next(error);
@@ -73,8 +83,8 @@ class AdminController {
 
   importSql = async (req, res, next) => {
     try {
-      await this.dataTransferService.importSql(req.body.sql || '');
-      res.json({ message: 'SQL imported' });
+      await this.dataTransferService.importSql(req.body.sql || "");
+      res.json({ message: "SQL imported" });
     } catch (error) {
       next(error);
     }
@@ -82,8 +92,50 @@ class AdminController {
 
   importExcel = async (req, res, next) => {
     try {
-      await this.dataTransferService.importExcel(req.body.base64 || '');
-      res.json({ message: 'Excel imported' });
+      await this.dataTransferService.importExcel(req.body.base64 || "");
+      res.json({ message: "Excel imported" });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  exportAllReports = async (_req, res, next) => {
+    try {
+      const buffer = await this.reportService.exportAllExcel();
+      const now = new Date();
+      const dateTag = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="bao-cao-toan-he-thong-${dateTag}.xlsx"`,
+      );
+      res.send(Buffer.from(buffer));
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  exportCsv = async (_req, res, next) => {
+    try {
+      const buffer = await this.dataTransferService.exportCsv();
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="technical-management-csv.zip"',
+      );
+      res.send(buffer);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  importCsv = async (req, res, next) => {
+    try {
+      await this.dataTransferService.importCsv(req.body.base64 || "");
+      res.json({ message: "CSV imported" });
     } catch (error) {
       next(error);
     }

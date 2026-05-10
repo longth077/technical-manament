@@ -234,8 +234,8 @@ export const KEEPER_COLUMN_CONFIG = {
   // warehouses.keeper_id → show all keepers from staff_warehouses
   keeper_id: {
     junctionEntity: "staff_warehouses",
-    junctionFkField: "warehouse_id",   // FK on the junction pointing back to this entity
-    junctionStaffField: "staff_id",    // FK on the junction pointing to staffs
+    junctionFkField: "warehouse_id", // FK on the junction pointing back to this entity
+    junctionStaffField: "staff_id", // FK on the junction pointing to staffs
     isMainField: "is_main_keeper",
     staffLabelField: "full_name",
     mainLabel: "Thủ kho chính",

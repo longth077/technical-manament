@@ -72,7 +72,14 @@ function AssignTab({ config, staffId, credential, canEdit }) {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [targetEntity, junctionEntity, filterField, staffId, primaryEntity, credential]);
+  }, [
+    targetEntity,
+    junctionEntity,
+    filterField,
+    staffId,
+    primaryEntity,
+    credential,
+  ]);
 
   useEffect(() => {
     load();
@@ -148,7 +155,12 @@ function AssignTab({ config, staffId, credential, canEdit }) {
     setSettingMainId(rowId);
     setError("");
     try {
-      await Api.updateEntity(junctionEntity, rowId, { [isMainField]: 1 }, credential);
+      await Api.updateEntity(
+        junctionEntity,
+        rowId,
+        { [isMainField]: 1 },
+        credential,
+      );
       invalidateCoCache(targetId);
       load();
     } catch (e) {
@@ -230,7 +242,9 @@ function AssignTab({ config, staffId, credential, canEdit }) {
                       <span
                         className={`keeper-badge ${row[isMainField] ? "keeper-main" : "keeper-vice"}`}
                       >
-                        {row[isMainField] ? (mainLabel || "Chính") : (viceLabel || "Phó")}
+                        {row[isMainField]
+                          ? mainLabel || "Chính"
+                          : viceLabel || "Phó"}
                       </span>
                     )}
                   </div>
@@ -279,7 +293,8 @@ function AssignTab({ config, staffId, credential, canEdit }) {
 
                     <div className="assign-detail-section">
                       <div className="assign-detail-title">
-                        {coAssigneeTitle || `Cán bộ phụ trách ${label.toLowerCase()} này`}
+                        {coAssigneeTitle ||
+                          `Cán bộ phụ trách ${label.toLowerCase()} này`}
                       </div>
                       {!coList ? (
                         <div className="m2m-empty">Đang tải...</div>
@@ -298,7 +313,8 @@ function AssignTab({ config, staffId, credential, canEdit }) {
                               >
                                 <span>
                                   {pItem
-                                    ? pItem[primaryLabelField] || `ID: ${ca[filterField]}`
+                                    ? pItem[primaryLabelField] ||
+                                      `ID: ${ca[filterField]}`
                                     : `ID: ${ca[filterField]}`}
                                 </span>
                                 {isMe && (
@@ -347,7 +363,9 @@ export default function StaffAssignModal({
     >
       <div className="modal-box modal-box-lg">
         <div className="modal-header">
-          <span className="modal-title">Phân công — {entityLabel || "Mục"} #{staffId}</span>
+          <span className="modal-title">
+            Phân công — {entityLabel || "Mục"} #{staffId}
+          </span>
           <button className="btn btn-sm modal-close" onClick={onClose}>
             ✕
           </button>

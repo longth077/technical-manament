@@ -5,6 +5,8 @@
 -- Generated from: "Phân tích phần mềm quản lý kỹ thuật.docx"
 -- ============================================================================
 
+SET FOREIGN_KEY_CHECKS = 0;
+
 -- ============================================================================
 -- 0. ENUM CONSTANTS (Centralized lookup for constant values)
 -- ============================================================================
@@ -119,9 +121,9 @@ CREATE TABLE IF NOT EXISTS staffs (
 
 
 
-CREATE INDEX idx_staff_full_name ON staff(full_name);
-CREATE INDEX idx_staff_rank_id ON staff(rank_id);
-CREATE INDEX idx_staff_unit_department ON staff(unit_department);
+CREATE INDEX idx_staff_full_name ON staffs(full_name);
+CREATE INDEX idx_staff_rank_id ON staffs(rank_id);
+CREATE INDEX idx_staff_unit_department ON staffs(unit_department);
 
 -- ============================================================================
 -- 5. WAREHOUSES (Kho/Trạm/Xưởng)
@@ -382,8 +384,8 @@ CREATE TABLE IF NOT EXISTS tech_equipments (
 
 
 
-CREATE INDEX idx_tech_equipment_name ON tech_equipment(name);
-CREATE INDEX idx_tech_equipment_classification ON tech_equipment(classification);
+CREATE INDEX idx_tech_equipment_name ON tech_equipments(name);
+CREATE INDEX idx_tech_equipment_classification ON tech_equipments(classification);
 
 -- ============================================================================
 -- 8. VEHICLES (Phương tiện)
@@ -477,8 +479,8 @@ CREATE TABLE IF NOT EXISTS staff_warehouses (
                         END
                     ) STORED,
     assigned_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE,
-    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE CASCADE,
+    FOREIGN KEY (staff_id) REFERENCES staffs(id),
+    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id),
     UNIQUE KEY uq_staff_warehouses_assignment (staff_key, warehouse_key),
     CHECK (
         staff_id IS NOT NULL OR (staff_name IS NOT NULL AND length(trim(staff_name)) > 0)
@@ -507,8 +509,8 @@ CREATE TABLE IF NOT EXISTS staff_weapons (
                         END
                     ) STORED,
     assigned_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE,
-    FOREIGN KEY (weapon_id) REFERENCES weapons(id) ON DELETE CASCADE,
+    FOREIGN KEY (staff_id) REFERENCES staffs(id),
+    FOREIGN KEY (weapon_id) REFERENCES weapons(id),
     UNIQUE KEY uq_staff_weapons_assignment (staff_key, weapon_key),
     CHECK (
         staff_id IS NOT NULL OR (staff_name IS NOT NULL AND length(trim(staff_name)) > 0)
@@ -537,8 +539,8 @@ CREATE TABLE IF NOT EXISTS staff_vehicles (
                         END
                     ) STORED,
     assigned_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE,
-    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE,
+    FOREIGN KEY (staff_id) REFERENCES staffs(id),
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id),
     UNIQUE KEY uq_staff_vehicles_assignment (staff_key, vehicle_key),
     CHECK (
         staff_id IS NOT NULL OR (staff_name IS NOT NULL AND length(trim(staff_name)) > 0)
@@ -561,14 +563,14 @@ CREATE TABLE IF NOT EXISTS staff_tech_equipment (
                             END
                         ) STORED,
     tech_equipment_key   VARCHAR(300) GENERATED ALWAYS AS (
-                            CASE
+                            CASE 
                                 WHEN tech_equipment_id IS NOT NULL THEN CONCAT('ID:', tech_equipment_id)
                                 ELSE CONCAT('NAME:', lower(trim(tech_equipment_name)))
                             END
                         ) STORED,
     assigned_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE,
-    FOREIGN KEY (tech_equipment_id) REFERENCES tech_equipment(id) ON DELETE CASCADE,
+    FOREIGN KEY (staff_id) REFERENCES staffs(id),
+    FOREIGN KEY (tech_equipment_id) REFERENCES tech_equipments(id),
     UNIQUE KEY uq_staff_tech_equipment_assignment (staff_key, tech_equipment_key),
     CHECK (
         staff_id IS NOT NULL OR (staff_name IS NOT NULL AND length(trim(staff_name)) > 0)
@@ -584,6 +586,8 @@ CREATE TABLE IF NOT EXISTS staff_tech_equipment (
 -- SAMPLE DATA INSERTION
 -- ============================================================================
 -- ============================================================================
+
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================================
 -- Sample Users

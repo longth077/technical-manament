@@ -139,13 +139,14 @@ CREATE TABLE IF NOT EXISTS warehouses (
     id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     code                VARCHAR(255) NOT NULL CHECK (length(trim(code)) > 0),
     function_desc       VARCHAR(255) NOT NULL CHECK (length(trim(function_desc)) > 0),
-    keeper              VARCHAR(255) NOT NULL DEFAULT '',
+    keeper_id           BIGINT UNSIGNED NULL,
     managing_unit       VARCHAR(255) NOT NULL DEFAULT '',
     area                VARCHAR(255) NOT NULL DEFAULT '',
     construction_date   VARCHAR(255) NOT NULL DEFAULT '',
     notes               VARCHAR(255) NOT NULL DEFAULT '',
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (keeper_id) REFERENCES staffs(id) ON DELETE SET NULL
 );
 
 
@@ -460,12 +461,19 @@ CREATE INDEX idx_materials_classification ON materials(classification);
 -- ============================================================================
 -- 10. staffs ASSIGNMENTS (Many-to-many with assigned entities)
 -- ============================================================================
+-- Migration for existing databases:
+--   ALTER TABLE warehouses DROP COLUMN keeper;
+--   ALTER TABLE warehouses ADD COLUMN keeper_id BIGINT UNSIGNED NULL;
+--   ALTER TABLE warehouses ADD CONSTRAINT fk_warehouse_keeper FOREIGN KEY (keeper_id) REFERENCES staffs(id) ON DELETE SET NULL;
+--   ALTER TABLE staff_warehouses ADD COLUMN is_main_keeper TINYINT(1) NOT NULL DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS staff_warehouses (
     id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     staff_id         BIGINT UNSIGNED NULL,
     staff_name       VARCHAR(255) NULL,
     warehouse_id     BIGINT UNSIGNED NULL,
     warehouse_code   VARCHAR(255) NULL,
+    is_main_keeper   TINYINT(1) NOT NULL DEFAULT 0,
     staff_key        VARCHAR(300) GENERATED ALWAYS AS (
                         CASE
                             WHEN staff_id IS NOT NULL THEN CONCAT('ID:', staff_id)
@@ -723,12 +731,13 @@ INSERT INTO staffs (full_name, date_of_birth, id_number, rank_id, position, unit
 -- ============================================================================
 -- Sample Warehouses (Kho/Trạm/Xưởng)
 -- ============================================================================
-INSERT INTO warehouses (code, function_desc, keeper, managing_unit, area, construction_date, notes) VALUES
-    ('Kho A1', 'Lưu trữ vũ khí, trang bị cấp 1', 'Nguyễn Văn Hùng', 'Cụm bộ', '200 m²', '2010-06-15', 'Kho chính, có hệ thống điều hòa'),
-    ('Kho A2', 'Lưu trữ vũ khí, trang bị cấp 2', 'Trần Văn Minh', 'Cụm bộ', '150 m²', '2012-03-20', 'Kho phụ'),
-    ('Kho B1', 'Bảo quản trang thiết bị kỹ thuật dò tìm', 'Lê Thị Hoa', 'Đội Dò tìm', '180 m²', '2015-08-10', 'Kho thiết bị chuyên dụng'),
-    ('Kho C1', 'Lưu trữ vật tư, phụ tùng sửa chữa', 'Hoàng Minh Tuấn', 'Trạm xử lý', '250 m²', '2008-11-25', 'Kho vật tư tổng hợp'),
-    ('Trạm sửa chữa T1', 'Sửa chữa, bảo dưỡng phương tiện và trang thiết bị', 'Bùi Văn Nam', 'Trạm xử lý', '300 m²', '2011-04-12', 'Trạm sửa chữa chính');
+-- keeper_id is managed via staff_warehouses junction table (auto-synced on assignment)
+INSERT INTO warehouses (code, function_desc, managing_unit, area, construction_date, notes) VALUES
+    ('Kho A1', 'Lưu trữ vũ khí, trang bị cấp 1', 'Cụm bộ', '200 m²', '2010-06-15', 'Kho chính, có hệ thống điều hòa'),
+    ('Kho A2', 'Lưu trữ vũ khí, trang bị cấp 2', 'Cụm bộ', '150 m²', '2012-03-20', 'Kho phụ'),
+    ('Kho B1', 'Bảo quản trang thiết bị kỹ thuật dò tìm', 'Đội Dò tìm', '180 m²', '2015-08-10', 'Kho thiết bị chuyên dụng'),
+    ('Kho C1', 'Lưu trữ vật tư, phụ tùng sửa chữa', 'Trạm xử lý', '250 m²', '2008-11-25', 'Kho vật tư tổng hợp'),
+    ('Trạm sửa chữa T1', 'Sửa chữa, bảo dưỡng phương tiện và trang thiết bị', 'Trạm xử lý', '300 m²', '2011-04-12', 'Trạm sửa chữa chính');
 
 -- ============================================================================
 -- Sample Warehouse Images

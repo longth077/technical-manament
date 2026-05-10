@@ -7,6 +7,7 @@ import {
   M2M_CONFIG,
   ENTITY_FILTER_FIELDS,
   FK_DISPLAY,
+  KEEPER_COLUMN_CONFIG,
 } from "../services/entityConfig";
 
 /** Dropdown loaded from a sibling entity (FK exact-match, backend-filtered). */
@@ -182,6 +183,48 @@ export default function EntitySection({
     };
   }, [rows, credential]);
 
+  // ── Keeper lookups (junction table + staffs) ──────────────────────────────
+  // keeperColCfg: the KEEPER_COLUMN_CONFIG entry that applies to the current entity's rows
+  const keeperColCfg = useMemo(() => {
+    if (!rows.length) return null;
+    const col = Object.keys(KEEPER_COLUMN_CONFIG).find((k) => k in rows[0]);
+    return col ? { col, ...KEEPER_COLUMN_CONFIG[col] } : null;
+  }, [rows]);
+
+  // keepersByRowId: { [rowId]: [ { staffName, isMain } ] }
+  const [keepersByRowId, setKeepersByRowId] = useState({});
+  const [staffMap, setStaffMap] = useState({});
+
+  useEffect(() => {
+    if (!keeperColCfg || !rows.length) { setKeepersByRowId({}); return; }
+    let active = true;
+    const { junctionEntity, junctionFkField, junctionStaffField, isMainField, staffLabelField } = keeperColCfg;
+
+    Promise.all([
+      Api.listEntity(junctionEntity, credential).catch(() => ({ rows: [] })),
+      Api.listEntity("staffs", credential).catch(() => ({ rows: [] })),
+    ]).then(([junctionData, staffsData]) => {
+      if (!active) return;
+      const jRows = junctionData.rows || [];
+      const sRows = staffsData.rows || [];
+
+      const sMap = {};
+      for (const s of sRows) sMap[String(s.id)] = s[staffLabelField] ?? `ID:${s.id}`;
+      setStaffMap(sMap);
+
+      const byId = {};
+      for (const j of jRows) {
+        const rid = String(j[junctionFkField]);
+        if (!byId[rid]) byId[rid] = [];
+        byId[rid].push({ staffName: sMap[String(j[junctionStaffField])] ?? `ID:${j[junctionStaffField]}`, isMain: !!j[isMainField] });
+      }
+      // sort: main first
+      for (const rid of Object.keys(byId)) byId[rid].sort((a, b) => b.isMain - a.isMain);
+      setKeepersByRowId(byId);
+    });
+    return () => { active = false; };
+  }, [keeperColCfg, rows, credential, loadKey]);
+
   const loadRows = () => {
     setLoading(true); // OK: called from event handler
     setLoadKey((k) => k + 1);
@@ -286,13 +329,31 @@ export default function EntitySection({
 
   const columns = rows.length ? Object.keys(rows[0]) : [];
 
-  const getColHeader = (col) =>
-    FK_DISPLAY[col] ? FK_DISPLAY[col].columnLabel : getColumnLabel(entity, col);
+  const getColHeader = (col) => {
+    if (KEEPER_COLUMN_CONFIG[col]) return KEEPER_COLUMN_CONFIG[col].columnLabel;
+    return FK_DISPLAY[col] ? FK_DISPLAY[col].columnLabel : getColumnLabel(entity, col);
+  };
 
   const getCellDisplay = (col, val) =>
     fkLookups[col]
       ? (fkLookups[col][String(val)] ?? String(val ?? ""))
       : String(val ?? "");
+
+  /** Renders keeper badges for a warehouse row in the table. */
+  const renderKeeperCell = (rowId) => {
+    const keepers = keepersByRowId[String(rowId)];
+    if (!keepers || keepers.length === 0) return <span className="text-muted">—</span>;
+    return (
+      <div className="keeper-cell">
+        {keepers.map((k, i) => (
+          <span key={i} className={`keeper-badge ${k.isMain ? "keeper-main" : "keeper-vice"}`}>
+            {k.staffName}
+            <em>{k.isMain ? (keeperColCfg?.mainLabel || "Chính") : (keeperColCfg?.viceLabel || "Phó")}</em>
+          </span>
+        ))}
+      </div>
+    );
+  };
 
   const handleToggleCreate = () => {
     setError("");
@@ -426,6 +487,29 @@ export default function EntitySection({
               credential={credential}
               readOnly={!isEditMode || !canEdit}
             />
+            {/* Read-only keeper panel shown when a keeper column exists */}
+            {keeperColCfg && (
+              <div className="keeper-detail-panel">
+                <div className="keeper-detail-title">{keeperColCfg.columnLabel}</div>
+                {(() => {
+                  const keepers = keepersByRowId[String(editingRow.id)];
+                  if (!keepers || keepers.length === 0)
+                    return <span className="text-muted keeper-detail-empty">Chưa có thủ kho được phân công</span>;
+                  return (
+                    <div className="keeper-detail-list">
+                      {keepers.map((k, i) => (
+                        <div key={i} className="keeper-detail-item">
+                          <span className={`keeper-badge ${k.isMain ? "keeper-main" : "keeper-vice"}`}>
+                            {k.isMain ? (keeperColCfg.mainLabel || "Chính") : (keeperColCfg.viceLabel || "Phó")}
+                          </span>
+                          <span className="keeper-detail-name">{k.staffName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
             {(!isEditMode || !canEdit) && (
               <div className="table-form-actions">
                 {canEdit && (
@@ -465,7 +549,7 @@ export default function EntitySection({
             credential={credential}
             canEdit={canEdit}
             entityLabel={entityLabel}
-            onClose={() => setShowM2mModal(false)}
+            onClose={() => { setShowM2mModal(false); loadRows(); }}
           />
         )}
 
@@ -519,6 +603,8 @@ export default function EntitySection({
                               >
                                 {getCellDisplay(c, row[c])}
                               </button>
+                            ) : KEEPER_COLUMN_CONFIG[c] ? (
+                              renderKeeperCell(row.id)
                             ) : (
                               getCellDisplay(c, row[c])
                             )}

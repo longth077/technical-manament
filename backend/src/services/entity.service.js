@@ -1,5 +1,6 @@
 // FK fields supported as query filters per entity
 const FILTER_FIELDS = {
+  warehouses: ['keeper_id'],
   warehouse_images: ['warehouse_id'],
   warehouse_equipments: ['warehouse_id'],
   warehouse_inspections: ['warehouse_id'],
@@ -8,7 +9,7 @@ const FILTER_FIELDS = {
   warehouse_exports: ['warehouse_id'],
   warehouse_imports: ['warehouse_id'],
   warehouse_lightnings: ['warehouse_id'],
-  staff_warehouses: ['staff_id', 'warehouse_id'],
+  staff_warehouses: ['staff_id', 'warehouse_id', 'is_main_keeper'],
   staff_weapons: ['staff_id', 'weapon_id'],
   staff_vehicles: ['staff_id', 'vehicle_id'],
   staff_tech_equipment: ['staff_id', 'tech_equipment_id'],
@@ -54,16 +55,53 @@ class EntityService {
   async create(entity, payload) {
     // Strip auto-managed fields so DB AUTO_INCREMENT always generates the id
     const { id: _id, created_at: _ca, updated_at: _ua, ...cleanPayload } = payload;
-    this._validate(entity, cleanPayload);
+    this._validate(entity, cleanPayload, true);
     const repo = this.getRepository(entity);
-    return repo.create(cleanPayload);
+
+    // Special: auto-set first keeper of a warehouse as main keeper
+    if (entity === 'staff_warehouses' && cleanPayload.warehouse_id && cleanPayload.staff_id) {
+      const existing = await repo.findWithFilter({ warehouse_id: cleanPayload.warehouse_id });
+      if (existing.length === 0) {
+        cleanPayload.is_main_keeper = 1;
+      }
+    }
+
+    const row = await repo.create(cleanPayload);
+
+    // Sync warehouse.keeper_id when this keeper is set as main
+    if (entity === 'staff_warehouses' && row.is_main_keeper && row.warehouse_id && row.staff_id) {
+      const warehouseRepo = this.getRepository('warehouses');
+      await warehouseRepo.update(row.warehouse_id, { keeper_id: row.staff_id });
+    }
+
+    return row;
   }
 
   async update(entity, id, payload) {
     // Strip auto-managed fields so clients cannot overwrite them
     const { id: _id, created_at: _ca, updated_at: _ua, ...cleanPayload } = payload;
-    this._validate(entity, cleanPayload);
+    this._validate(entity, cleanPayload, false);
     const repo = this.getRepository(entity);
+
+    // Special: promoting a keeper to main — enforce uniqueness and sync warehouse.keeper_id
+    if (entity === 'staff_warehouses' && cleanPayload.is_main_keeper) {
+      const current = await repo.findById(id);
+      if (current && current.warehouse_id) {
+        // Unset is_main_keeper on all other keepers of this warehouse
+        const allKeepers = await repo.findWithFilter({ warehouse_id: current.warehouse_id });
+        for (const k of allKeepers) {
+          if (String(k.id) !== String(id) && k.is_main_keeper) {
+            await repo.update(k.id, { is_main_keeper: 0 });
+          }
+        }
+        // Sync warehouse.keeper_id to this staff
+        if (current.staff_id) {
+          const warehouseRepo = this.getRepository('warehouses');
+          await warehouseRepo.update(current.warehouse_id, { keeper_id: current.staff_id });
+        }
+      }
+    }
+
     const row = await repo.update(id, cleanPayload);
     if (!row) {
       const err = new Error('Record not found');
@@ -75,6 +113,16 @@ class EntityService {
 
   async remove(entity, id) {
     const repo = this.getRepository(entity);
+
+    // Special: if removing a main keeper, clear the warehouse.keeper_id
+    if (entity === 'staff_warehouses') {
+      const row = await repo.findById(id);
+      if (row && row.is_main_keeper && row.warehouse_id) {
+        const warehouseRepo = this.getRepository('warehouses');
+        await warehouseRepo.update(row.warehouse_id, { keeper_id: null });
+      }
+    }
+
     const ok = await repo.delete(id);
     if (!ok) {
       const err = new Error('Record not found');
@@ -83,7 +131,7 @@ class EntityService {
     }
   }
 
-  _validate(entity, payload) {
+  _validate(entity, payload, isCreate = true) {
     const currentYear = new Date().getFullYear();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -160,31 +208,39 @@ class EntityService {
     }
 
     if (entity === 'staff_warehouses') {
-      const hasStaff = payload.staff_id || (payload.staff_name && String(payload.staff_name).trim());
-      const hasWarehouse = payload.warehouse_id || (payload.warehouse_code && String(payload.warehouse_code).trim());
-      if (!hasStaff) errors.push('staff_id or staff_name is required');
-      if (!hasWarehouse) errors.push('warehouse_id or warehouse_code is required');
+      if (isCreate) {
+        const hasStaff = payload.staff_id || (payload.staff_name && String(payload.staff_name).trim());
+        const hasWarehouse = payload.warehouse_id || (payload.warehouse_code && String(payload.warehouse_code).trim());
+        if (!hasStaff) errors.push('staff_id or staff_name is required');
+        if (!hasWarehouse) errors.push('warehouse_id or warehouse_code is required');
+      }
     }
 
     if (entity === 'staff_weapons') {
-      const hasStaff = payload.staff_id || (payload.staff_name && String(payload.staff_name).trim());
-      const hasWeapon = payload.weapon_id || (payload.weapon_name && String(payload.weapon_name).trim());
-      if (!hasStaff) errors.push('staff_id or staff_name is required');
-      if (!hasWeapon) errors.push('weapon_id or weapon_name is required');
+      if (isCreate) {
+        const hasStaff = payload.staff_id || (payload.staff_name && String(payload.staff_name).trim());
+        const hasWeapon = payload.weapon_id || (payload.weapon_name && String(payload.weapon_name).trim());
+        if (!hasStaff) errors.push('staff_id or staff_name is required');
+        if (!hasWeapon) errors.push('weapon_id or weapon_name is required');
+      }
     }
 
     if (entity === 'staff_vehicles') {
-      const hasStaff = payload.staff_id || (payload.staff_name && String(payload.staff_name).trim());
-      const hasVehicle = payload.vehicle_id || (payload.vehicle_name && String(payload.vehicle_name).trim());
-      if (!hasStaff) errors.push('staff_id or staff_name is required');
-      if (!hasVehicle) errors.push('vehicle_id or vehicle_name is required');
+      if (isCreate) {
+        const hasStaff = payload.staff_id || (payload.staff_name && String(payload.staff_name).trim());
+        const hasVehicle = payload.vehicle_id || (payload.vehicle_name && String(payload.vehicle_name).trim());
+        if (!hasStaff) errors.push('staff_id or staff_name is required');
+        if (!hasVehicle) errors.push('vehicle_id or vehicle_name is required');
+      }
     }
 
     if (entity === 'staff_tech_equipment') {
-      const hasStaff = payload.staff_id || (payload.staff_name && String(payload.staff_name).trim());
-      const hasTech = payload.tech_equipment_id || (payload.tech_equipment_name && String(payload.tech_equipment_name).trim());
-      if (!hasStaff) errors.push('staff_id or staff_name is required');
-      if (!hasTech) errors.push('tech_equipment_id or tech_equipment_name is required');
+      if (isCreate) {
+        const hasStaff = payload.staff_id || (payload.staff_name && String(payload.staff_name).trim());
+        const hasTech = payload.tech_equipment_id || (payload.tech_equipment_name && String(payload.tech_equipment_name).trim());
+        if (!hasStaff) errors.push('staff_id or staff_name is required');
+        if (!hasTech) errors.push('tech_equipment_id or tech_equipment_name is required');
+      }
     }
 
     if (errors.length) {

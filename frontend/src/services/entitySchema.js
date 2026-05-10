@@ -54,7 +54,6 @@ export const ENTITY_SCHEMAS = {
   warehouses: [
     { key: "code", label: "Mã kho", type: "text" },
     { key: "function_desc", label: "Chức năng", type: "text" },
-    { key: "keeper", label: "Thủ kho", type: "text" },
     { key: "managing_unit", label: "Đơn vị quản lý", type: "text" },
     { key: "area", label: "Diện tích", type: "text" },
     { key: "construction_date", label: "Ngày xây dựng", type: "text" },

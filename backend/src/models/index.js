@@ -59,7 +59,7 @@ const warehouses = sequelize.define('warehouses', {
   id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
   code: { type: DataTypes.STRING(255), allowNull: false },
   function_desc: { type: DataTypes.STRING(255), allowNull: false },
-  keeper: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
+  keeper_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
   managing_unit: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   area: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
   construction_date: { type: DataTypes.STRING(255), allowNull: false, defaultValue: '' },
@@ -243,6 +243,7 @@ const staff_warehouses = sequelize.define('staff_warehouses', {
   staff_name: { type: DataTypes.STRING(255), allowNull: true },
   warehouse_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
   warehouse_code: { type: DataTypes.STRING(255), allowNull: true },
+  is_main_keeper: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   assigned_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
 }, { tableName: 'staff_warehouses', timestamps: false });
 

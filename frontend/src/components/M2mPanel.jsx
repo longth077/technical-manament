@@ -35,6 +35,9 @@ function AssignTab({ config, staffId, credential, canEdit }) {
     primaryLabelField,
     coAssigneeTitle,
     label,
+    isMainField,
+    mainLabel,
+    viceLabel,
   } = config;
 
   const [available, setAvailable] = useState([]);
@@ -45,6 +48,7 @@ function AssignTab({ config, staffId, credential, canEdit }) {
   const [coAssignees, setCoAssignees] = useState({});
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [settingMainId, setSettingMainId] = useState(null);
   const [error, setError] = useState("");
 
   const targetSchema = ENTITY_SCHEMAS[targetEntity] || [];
@@ -140,6 +144,20 @@ function AssignTab({ config, staffId, credential, canEdit }) {
     }
   };
 
+  const handleSetMain = async (rowId, targetId) => {
+    setSettingMainId(rowId);
+    setError("");
+    try {
+      await Api.updateEntity(junctionEntity, rowId, { [isMainField]: 1 }, credential);
+      invalidateCoCache(targetId);
+      load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSettingMainId(null);
+    }
+  };
+
   const toggleExpand = (row) => {
     const rid = row.id;
     const targetId = row[targetIdField];
@@ -202,12 +220,30 @@ function AssignTab({ config, staffId, credential, canEdit }) {
             return (
               <li key={row.id} className="assign-item">
                 <div className="assign-item-header">
-                  <span className="assign-item-name">
-                    {item
-                      ? item[targetLabelField] || `ID: ${item.id}`
-                      : `ID: ${targetId ?? "?"}`}
-                  </span>
+                  <div className="assign-item-name-group">
+                    <span className="assign-item-name">
+                      {item
+                        ? item[targetLabelField] || `ID: ${item.id}`
+                        : `ID: ${targetId ?? "?"}`}
+                    </span>
+                    {isMainField && (
+                      <span
+                        className={`keeper-badge ${row[isMainField] ? "keeper-main" : "keeper-vice"}`}
+                      >
+                        {row[isMainField] ? (mainLabel || "Chính") : (viceLabel || "Phó")}
+                      </span>
+                    )}
+                  </div>
                   <div className="assign-item-actions">
+                    {canEdit && isMainField && !row[isMainField] && (
+                      <button
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => handleSetMain(row.id, targetId)}
+                        disabled={settingMainId === row.id}
+                      >
+                        {settingMainId === row.id ? "..." : "★ Đặt làm chính"}
+                      </button>
+                    )}
                     <button
                       className="btn btn-sm btn-outline"
                       onClick={() => toggleExpand(row)}

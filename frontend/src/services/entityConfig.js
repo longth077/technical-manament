@@ -17,7 +17,6 @@ export const ENTITY_FILTER_FIELDS = {
   ],
   warehouses: [
     { key: "code", label: "Mã kho", type: "text" },
-    { key: "keeper", label: "Thủ kho", type: "text" },
     { key: "managing_unit", label: "Đơn vị quản lý", type: "text" },
     { key: "notes", label: "Ghi chú", type: "text" },
   ],
@@ -227,8 +226,27 @@ export const ENTITY_FILTER_FIELDS = {
   enum_constants: [{ key: "type", label: "Loại", type: "text" }],
 };
 
+/**
+ * Columns that show keeper badges (main/vice) in the table and detail panel.
+ * key = FK column on the primary entity; value = config to load keepers.
+ */
+export const KEEPER_COLUMN_CONFIG = {
+  // warehouses.keeper_id → show all keepers from staff_warehouses
+  keeper_id: {
+    junctionEntity: "staff_warehouses",
+    junctionFkField: "warehouse_id",   // FK on the junction pointing back to this entity
+    junctionStaffField: "staff_id",    // FK on the junction pointing to staffs
+    isMainField: "is_main_keeper",
+    staffLabelField: "full_name",
+    mainLabel: "Thủ kho chính",
+    viceLabel: "Thủ kho phó",
+    columnLabel: "Thủ kho",
+  },
+};
+
 // FK columns to resolve to labels in the data table.
 // key = column name in the row; entity/labelField = where to load the label from.
+// Note: keeper_id is handled by KEEPER_COLUMN_CONFIG above (renders badges, not plain text).
 export const FK_DISPLAY = {
   warehouse_id: {
     entity: "warehouses",
@@ -287,6 +305,9 @@ export const M2M_CONFIG = {
       primaryLabelField: "full_name",
       coAssigneeTitle: "Cán bộ khác phụ trách kho này",
       label: "Kho phụ trách",
+      isMainField: "is_main_keeper",
+      mainLabel: "Thủ kho chính",
+      viceLabel: "Thủ kho phó",
     },
     {
       junctionEntity: "staff_weapons",
@@ -334,6 +355,9 @@ export const M2M_CONFIG = {
       primaryLabelField: "code",
       coAssigneeTitle: "Kho khác phụ trách bởi cán bộ này",
       label: "Cán bộ phụ trách",
+      isMainField: "is_main_keeper",
+      mainLabel: "Thủ kho chính",
+      viceLabel: "Thủ kho phó",
     },
   ],
 

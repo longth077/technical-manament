@@ -17,6 +17,15 @@ function createRoutes({
 
   router.post("/auth/signup", signupValidator, validate, authController.signup);
   router.get("/auth/me", authMiddleware, authController.me);
+  router.post(
+    "/auth/change-password",
+    authMiddleware,
+    body("currentPassword").isString().notEmpty(),
+    body("newPassword").isLength({ min: 8, max: 255 }),
+    body("confirmPassword").isString().notEmpty(),
+    validate,
+    authController.changePassword,
+  );
 
   router.get(
     "/admin/users",

@@ -9,6 +9,10 @@ class UserRepository {
     return this.model.findOne({ where: { username } });
   }
 
+  async findById(id) {
+    return this.model.findByPk(id);
+  }
+
   async findByEmail(email) {
     return this.model.findOne({ where: { email } });
   }

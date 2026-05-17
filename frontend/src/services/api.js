@@ -36,6 +36,8 @@ export const Api = {
   signup: (payload) =>
     request("/auth/signup", { method: "POST", body: payload }),
   me: (credential) => request("/auth/me", { credential }),
+  changePassword: (payload, credential) =>
+    request("/auth/change-password", { method: "POST", credential, body: payload }),
 
   listEntity: (entity, credential, params = {}) => {
     const qs = new URLSearchParams(params).toString();

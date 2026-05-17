@@ -84,6 +84,25 @@ class AuthService {
     }
     return user;
   }
+
+  async changePassword(userId, currentPassword, newPassword) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      const err = new Error("User not found");
+      err.status = 404;
+      throw err;
+    }
+
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) {
+      const err = new Error("Current password is incorrect");
+      err.status = 400;
+      throw err;
+    }
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    await this.userRepository.updateById(userId, { password: hash });
+  }
 }
 
 module.exports = AuthService;

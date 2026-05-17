@@ -13,8 +13,8 @@ import "./App.css";
 
 const entities = Object.keys(ENTITY_LABELS);
 
-/* Session duration: 8 hours */
-const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
+/* Session duration: 1 hour */
+const SESSION_DURATION_MS = 1 * 60 * 60 * 1000;
 
 function App() {
   /* ── Auth state ── */
@@ -42,6 +42,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [accountPanelOpen, setAccountPanelOpen] = useState(false);
   const [sessionMsg, setSessionMsg] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   const canEdit = useMemo(() => user && user.role !== "readonly", [user]);
 
@@ -172,6 +173,7 @@ function App() {
 
   if (!user) {
     return (
+      <>
       <div className="auth-page">
         <div className="auth-container">
           <div className="auth-brand">
@@ -198,7 +200,16 @@ function App() {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Mật khẩu</label>
+                <div className="form-label-row">
+                  <label className="form-label">Mật khẩu</label>
+                  <button
+                    type="button"
+                    className="auth-link auth-link-sm"
+                    onClick={() => setForgotOpen(true)}
+                  >
+                    Quên mật khẩu?
+                  </button>
+                </div>
                 <input
                   className="form-input"
                   type="password"
@@ -311,6 +322,27 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* Forgot password modal */}
+      {forgotOpen && (
+        <div className="modal-overlay" onClick={() => setForgotOpen(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h4>🔑 Quên mật khẩu</h4>
+            </div>
+            <div className="modal-body">
+              <p>Bạn không thể tự đặt lại mật khẩu qua hệ thống này.</p>
+              <p style={{ marginTop: '0.6rem' }}>
+                Vui lòng liên hệ <strong>quản trị viên</strong> để được hỗ trợ đặt lại mật khẩu.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setForgotOpen(false)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
     );
   }
 
@@ -490,6 +522,7 @@ function App() {
           user={user}
           credential={credential}
           onClose={() => setAccountPanelOpen(false)}
+          onSignOut={() => signOut()}
         />
       )}
     </div>

@@ -1075,6 +1075,97 @@ textarea.overview-field-input {
   margin-bottom: 0.75rem;
 }
 
+.account-change-password {
+  border-top: 1px solid var(--color-border-light);
+}
+
+.account-section-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  font-family: inherit;
+}
+
+.account-section-toggle:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.toggle-chevron {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-style: normal;
+}
+
+.toggle-chevron.open {
+  transform: rotate(180deg);
+}
+
+.account-pw-form {
+  padding: 0 1.5rem 1rem;
+}
+
+.account-pw-form .form-group {
+  margin-bottom: 0.75rem;
+}
+
+.account-pw-form .form-group label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: var(--color-text);
+}
+
+.account-pw-form .form-group input {
+  width: 100%;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  box-sizing: border-box;
+}
+
+.account-pw-form .form-group input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.account-pw-form .alert-error {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  margin-bottom: 0.6rem;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.account-pw-form .alert-success {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  margin-bottom: 0.6rem;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.account-logout-section {
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
 /* ===== Generic Modal ===== */
 .modal-overlay {
   position: fixed;
@@ -1111,6 +1202,30 @@ textarea.overview-field-input {
   padding: 1rem;
   font-size: 0.86rem;
   color: var(--color-text);
+}
+
+.modal-footer {
+  padding: 0.75rem 1rem;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.form-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.form-label-row .form-label {
+  margin-bottom: 0;
+}
+
+.auth-link-sm {
+  font-size: 0.78rem;
 }
 
 .modal-user-info {

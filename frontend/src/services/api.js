@@ -4,7 +4,6 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 const makeAuthHeader = (credential) => ({
   Authorization: `Basic ${credential}`,
 });
-
 async function request(
   path,
   { method = "GET", credential, body, responseType = "json" } = {},
@@ -108,4 +107,27 @@ export const Api = {
       credential,
       body: { base64 },
     }),
+
+  // ── Warehouse image upload (multipart) & delete (with file cleanup) ────────
+  uploadWarehouseImage: (warehouseId, file, fileTypeId, description, credential) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("warehouse_id", String(warehouseId));
+    if (fileTypeId) form.append("file_type_id", String(fileTypeId));
+    if (description) form.append("description", description);
+    return fetch(`${API_URL}/warehouse-images/upload`, {
+      method: "POST",
+      headers: { ...(credential ? makeAuthHeader(credential) : {}) },
+      body: form,
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(mapApiErrorMessage(data.message || "Upload thất bại"));
+      }
+      return res.json();
+    });
+  },
+
+  deleteWarehouseImage: (id, credential) =>
+    request(`/warehouse-images/${id}`, { method: "DELETE", credential }),
 };

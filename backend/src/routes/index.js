@@ -10,6 +10,8 @@ function createRoutes({
   adminController,
   entityController,
   enumController,
+  warehouseImageController,
+  warehouseImageUpload,
 }) {
   const router = express.Router();
 
@@ -97,6 +99,23 @@ function createRoutes({
     body("base64").isString(),
     validate,
     adminController.importCsv,
+  );
+
+  // ── Warehouse image upload (multipart) & delete (with file cleanup) ──────────
+  router.post(
+    "/warehouse-images/upload",
+    authMiddleware,
+    requireWriteAccess,
+    warehouseImageUpload.single("file"),
+    warehouseImageController.upload,
+  );
+  router.delete(
+    "/warehouse-images/:id",
+    authMiddleware,
+    requireWriteAccess,
+    param("id").isInt({ min: 1 }),
+    validate,
+    warehouseImageController.remove,
   );
 
   router.get("/entities/:entity", authMiddleware, entityController.list);

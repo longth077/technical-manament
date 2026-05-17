@@ -5,6 +5,8 @@ import AdminReports from "./components/AdminReports";
 import HomePage from "./components/HomePage";
 import AccountPanel from "./components/AccountPanel";
 import UnitOverviewPage from "./components/UnitOverviewPage";
+import WarehouseGallery from "./components/WarehouseGallery";
+import WarehouseImageOverview from "./components/WarehouseImageOverview";
 import { Api } from "./services/api";
 import { ENTITY_LABELS, ENTITY_ICONS } from "./services/entityConfig";
 import "./App.css";
@@ -35,6 +37,8 @@ function App() {
     () => !!localStorage.getItem("credential"),
   );
   const [activeView, setActiveView] = useState("home"); // 'home' | entity key | 'transfer'
+  const [warehouseGalleryTarget, setWarehouseGalleryTarget] = useState(null); // warehouse row
+  const [galleryReturnView, setGalleryReturnView] = useState("warehouses"); // where Back navigates to
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [accountPanelOpen, setAccountPanelOpen] = useState(false);
   const [sessionMsg, setSessionMsg] = useState("");
@@ -71,7 +75,8 @@ function App() {
     setCredential("");
     setUser(null);
     setActiveView("home");
-    setAccountPanelOpen(false);
+    setWarehouseGalleryTarget(null);
+    setGalleryReturnView("warehouses");
     setSessionMsg(msg);
   };
 
@@ -372,7 +377,10 @@ function App() {
             <button
               key={entity}
               className={`sidebar-item ${activeView === entity ? "active" : ""}`}
-              onClick={() => setActiveView(entity)}
+              onClick={() => {
+                setActiveView(entity);
+                setWarehouseGalleryTarget(null);
+              }}
             >
               <span className="sidebar-icon">
                 {ENTITY_ICONS[entity] || "📋"}
@@ -417,12 +425,47 @@ function App() {
             />
           )}
 
-          {entities.includes(activeView) && (
+          {entities.includes(activeView) &&
+            activeView !== "warehouse_gallery" &&
+            activeView !== "warehouse_images" && (
             <EntitySection
               entity={activeView}
               entityLabel={ENTITY_LABELS[activeView]}
               credential={credential}
               canEdit={canEdit}
+                onViewGallery={
+                activeView === "warehouses"
+                  ? (row) => {
+                      setWarehouseGalleryTarget(row);
+                      setGalleryReturnView("warehouses");
+                      setActiveView("warehouse_gallery");
+                    }
+                  : undefined
+              }
+            />
+          )}
+
+          {activeView === "warehouse_images" && !warehouseGalleryTarget && (
+            <WarehouseImageOverview
+              credential={credential}
+              canEdit={canEdit}
+              onViewGallery={(row) => {
+                setWarehouseGalleryTarget(row);
+                setGalleryReturnView("warehouse_images");
+                setActiveView("warehouse_gallery");
+              }}
+            />
+          )}
+
+          {activeView === "warehouse_gallery" && warehouseGalleryTarget && (
+            <WarehouseGallery
+              warehouse={warehouseGalleryTarget}
+              credential={credential}
+              canEdit={canEdit}
+              onBack={() => {
+                setActiveView(galleryReturnView);
+                setWarehouseGalleryTarget(null);
+              }}
             />
           )}
 

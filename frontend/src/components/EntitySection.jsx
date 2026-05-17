@@ -105,6 +105,7 @@ export default function EntitySection({
   entityLabel,
   credential,
   canEdit,
+  onViewGallery,
 }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);

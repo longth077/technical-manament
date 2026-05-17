@@ -6,7 +6,12 @@ class AuthController {
   signup = async (req, res, next) => {
     try {
       const user = await this.authService.signup(req.body);
-      res.status(201).json({ message: 'Signup submitted and waiting for admin approval', user });
+      res
+        .status(201)
+        .json({
+          message: "Signup submitted and waiting for admin approval",
+          user,
+        });
     } catch (error) {
       next(error);
     }
@@ -19,8 +24,12 @@ class AuthController {
   changePassword = async (req, res, next) => {
     try {
       const { currentPassword, newPassword } = req.body;
-      await this.authService.changePassword(req.user.id, currentPassword, newPassword);
-      res.json({ message: 'Password changed successfully' });
+      await this.authService.changePassword(
+        req.user.id,
+        currentPassword,
+        newPassword,
+      );
+      res.json({ message: "Password changed successfully" });
     } catch (error) {
       next(error);
     }

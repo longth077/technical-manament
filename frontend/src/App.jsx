@@ -174,174 +174,184 @@ function App() {
   if (!user) {
     return (
       <>
-      <div className="auth-page">
-        <div className="auth-container">
-          <div className="auth-brand">
-            <div className="auth-brand-icon">⚙</div>
-            <h1>Quản Lý Kỹ Thuật</h1>
-            <p>Hệ thống Quản lý Kỹ thuật</p>
-          </div>
-
-          {sessionMsg && <div className="auth-message error">{sessionMsg}</div>}
-
-          {authView === "login" ? (
-            /* ── Login form ── */
-            <div className="auth-card">
-              <h3>Đăng nhập</h3>
-              <div className="form-group">
-                <label className="form-label">Tên đăng nhập hoặc Email</label>
-                <input
-                  className="form-input"
-                  placeholder="Nhập tên đăng nhập hoặc email"
-                  value={loginId}
-                  onChange={(e) => setLoginId(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && signIn()}
-                  autoFocus
-                />
-              </div>
-              <div className="form-group">
-                <div className="form-label-row">
-                  <label className="form-label">Mật khẩu</label>
-                  <button
-                    type="button"
-                    className="auth-link auth-link-sm"
-                    onClick={() => setForgotOpen(true)}
-                  >
-                    Quên mật khẩu?
-                  </button>
-                </div>
-                <input
-                  className="form-input"
-                  type="password"
-                  placeholder="Nhập mật khẩu"
-                  value={loginPw}
-                  onChange={(e) => setLoginPw(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && signIn()}
-                />
-              </div>
-              {authMessage.text && (
-                <div
-                  className={`auth-message ${authMessage.success ? "success" : "error"}`}
-                >
-                  {authMessage.text}
-                </div>
-              )}
-              <button className="btn btn-primary btn-full" onClick={signIn}>
-                Đăng nhập
-              </button>
-              <div className="auth-switch">
-                Chưa có tài khoản?&nbsp;
-                <button
-                  className="auth-link"
-                  onClick={() => {
-                    setAuthView("signup");
-                    setAuthMessage({ text: "", success: false });
-                    setSignupConfirmPassword("");
-                  }}
-                >
-                  Đăng ký ngay
-                </button>
-              </div>
+        <div className="auth-page">
+          <div className="auth-container">
+            <div className="auth-brand">
+              <div className="auth-brand-icon">⚙</div>
+              <h1>Quản Lý Kỹ Thuật</h1>
+              <p>Hệ thống Quản lý Kỹ thuật</p>
             </div>
-          ) : (
-            /* ── Signup form ── */
-            <div className="auth-card">
-              <h3>Đăng ký tài khoản</h3>
-              <div className="form-group">
-                <label className="form-label">Họ và tên</label>
-                <input
-                  className="form-input"
-                  placeholder="Nhập họ và tên"
-                  value={signupFullName}
-                  onChange={(e) => setSignupFullName(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Tên đăng nhập</label>
-                <input
-                  className="form-input"
-                  placeholder="Chọn tên đăng nhập"
-                  value={signupUsername}
-                  onChange={(e) => setSignupUsername(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Email</label>
-                <input
-                  className="form-input"
-                  type="email"
-                  placeholder="Nhập email"
-                  value={signupEmail}
-                  onChange={(e) => setSignupEmail(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Mật khẩu (ít nhất 8 ký tự)</label>
-                <input
-                  className="form-input"
-                  type="password"
-                  placeholder="Nhập mật khẩu"
-                  value={signupPassword}
-                  onChange={(e) => setSignupPassword(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Xác nhận mật khẩu</label>
-                <input
-                  className="form-input"
-                  type="password"
-                  placeholder="Nhập lại mật khẩu"
-                  value={signupConfirmPassword}
-                  onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                />
-              </div>
-              {authMessage.text && (
-                <div
-                  className={`auth-message ${authMessage.success ? "success" : "error"}`}
-                >
-                  {authMessage.text}
+
+            {sessionMsg && (
+              <div className="auth-message error">{sessionMsg}</div>
+            )}
+
+            {authView === "login" ? (
+              /* ── Login form ── */
+              <div className="auth-card">
+                <h3>Đăng nhập</h3>
+                <div className="form-group">
+                  <label className="form-label">Tên đăng nhập hoặc Email</label>
+                  <input
+                    className="form-input"
+                    placeholder="Nhập tên đăng nhập hoặc email"
+                    value={loginId}
+                    onChange={(e) => setLoginId(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && signIn()}
+                    autoFocus
+                  />
                 </div>
-              )}
-              <button className="btn btn-primary btn-full" onClick={signup}>
-                Đăng ký
-              </button>
-              <div className="auth-switch">
-                Đã có tài khoản?&nbsp;
-                <button
-                  className="auth-link"
-                  onClick={() => {
-                    setAuthView("login");
-                    setAuthMessage({ text: "", success: false });
-                    setSignupConfirmPassword("");
-                  }}
-                >
+                <div className="form-group">
+                  <div className="form-label-row">
+                    <label className="form-label">Mật khẩu</label>
+                    <button
+                      type="button"
+                      className="auth-link auth-link-sm"
+                      onClick={() => setForgotOpen(true)}
+                    >
+                      Quên mật khẩu?
+                    </button>
+                  </div>
+                  <input
+                    className="form-input"
+                    type="password"
+                    placeholder="Nhập mật khẩu"
+                    value={loginPw}
+                    onChange={(e) => setLoginPw(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && signIn()}
+                  />
+                </div>
+                {authMessage.text && (
+                  <div
+                    className={`auth-message ${authMessage.success ? "success" : "error"}`}
+                  >
+                    {authMessage.text}
+                  </div>
+                )}
+                <button className="btn btn-primary btn-full" onClick={signIn}>
                   Đăng nhập
                 </button>
+                <div className="auth-switch">
+                  Chưa có tài khoản?&nbsp;
+                  <button
+                    className="auth-link"
+                    onClick={() => {
+                      setAuthView("signup");
+                      setAuthMessage({ text: "", success: false });
+                      setSignupConfirmPassword("");
+                    }}
+                  >
+                    Đăng ký ngay
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Forgot password modal */}
-      {forgotOpen && (
-        <div className="modal-overlay" onClick={() => setForgotOpen(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h4>🔑 Quên mật khẩu</h4>
-            </div>
-            <div className="modal-body">
-              <p>Bạn không thể tự đặt lại mật khẩu qua hệ thống này.</p>
-              <p style={{ marginTop: '0.6rem' }}>
-                Vui lòng liên hệ <strong>quản trị viên</strong> để được hỗ trợ đặt lại mật khẩu.
-              </p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setForgotOpen(false)}>Đóng</button>
-            </div>
+            ) : (
+              /* ── Signup form ── */
+              <div className="auth-card">
+                <h3>Đăng ký tài khoản</h3>
+                <div className="form-group">
+                  <label className="form-label">Họ và tên</label>
+                  <input
+                    className="form-input"
+                    placeholder="Nhập họ và tên"
+                    value={signupFullName}
+                    onChange={(e) => setSignupFullName(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Tên đăng nhập</label>
+                  <input
+                    className="form-input"
+                    placeholder="Chọn tên đăng nhập"
+                    value={signupUsername}
+                    onChange={(e) => setSignupUsername(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input
+                    className="form-input"
+                    type="email"
+                    placeholder="Nhập email"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">
+                    Mật khẩu (ít nhất 8 ký tự)
+                  </label>
+                  <input
+                    className="form-input"
+                    type="password"
+                    placeholder="Nhập mật khẩu"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Xác nhận mật khẩu</label>
+                  <input
+                    className="form-input"
+                    type="password"
+                    placeholder="Nhập lại mật khẩu"
+                    value={signupConfirmPassword}
+                    onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                  />
+                </div>
+                {authMessage.text && (
+                  <div
+                    className={`auth-message ${authMessage.success ? "success" : "error"}`}
+                  >
+                    {authMessage.text}
+                  </div>
+                )}
+                <button className="btn btn-primary btn-full" onClick={signup}>
+                  Đăng ký
+                </button>
+                <div className="auth-switch">
+                  Đã có tài khoản?&nbsp;
+                  <button
+                    className="auth-link"
+                    onClick={() => {
+                      setAuthView("login");
+                      setAuthMessage({ text: "", success: false });
+                      setSignupConfirmPassword("");
+                    }}
+                  >
+                    Đăng nhập
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Forgot password modal */}
+        {forgotOpen && (
+          <div className="modal-overlay" onClick={() => setForgotOpen(false)}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h4>🔑 Quên mật khẩu</h4>
+              </div>
+              <div className="modal-body">
+                <p>Bạn không thể tự đặt lại mật khẩu qua hệ thống này.</p>
+                <p style={{ marginTop: "0.6rem" }}>
+                  Vui lòng liên hệ <strong>quản trị viên</strong> để được hỗ trợ
+                  đặt lại mật khẩu.
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setForgotOpen(false)}
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
   }
@@ -460,22 +470,22 @@ function App() {
           {entities.includes(activeView) &&
             activeView !== "warehouse_gallery" &&
             activeView !== "warehouse_images" && (
-            <EntitySection
-              entity={activeView}
-              entityLabel={ENTITY_LABELS[activeView]}
-              credential={credential}
-              canEdit={canEdit}
+              <EntitySection
+                entity={activeView}
+                entityLabel={ENTITY_LABELS[activeView]}
+                credential={credential}
+                canEdit={canEdit}
                 onViewGallery={
-                activeView === "warehouses"
-                  ? (row) => {
-                      setWarehouseGalleryTarget(row);
-                      setGalleryReturnView("warehouses");
-                      setActiveView("warehouse_gallery");
-                    }
-                  : undefined
-              }
-            />
-          )}
+                  activeView === "warehouses"
+                    ? (row) => {
+                        setWarehouseGalleryTarget(row);
+                        setGalleryReturnView("warehouses");
+                        setActiveView("warehouse_gallery");
+                      }
+                    : undefined
+                }
+              />
+            )}
 
           {activeView === "warehouse_images" && !warehouseGalleryTarget && (
             <WarehouseImageOverview

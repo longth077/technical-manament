@@ -37,7 +37,11 @@ export const Api = {
     request("/auth/signup", { method: "POST", body: payload }),
   me: (credential) => request("/auth/me", { credential }),
   changePassword: (payload, credential) =>
-    request("/auth/change-password", { method: "POST", credential, body: payload }),
+    request("/auth/change-password", {
+      method: "POST",
+      credential,
+      body: payload,
+    }),
 
   listEntity: (entity, credential, params = {}) => {
     const qs = new URLSearchParams(params).toString();
@@ -111,7 +115,13 @@ export const Api = {
     }),
 
   // ── Warehouse image upload (multipart) & delete (with file cleanup) ────────
-  uploadWarehouseImage: (warehouseId, file, fileTypeId, description, credential) => {
+  uploadWarehouseImage: (
+    warehouseId,
+    file,
+    fileTypeId,
+    description,
+    credential,
+  ) => {
     const form = new FormData();
     form.append("file", file);
     form.append("warehouse_id", String(warehouseId));

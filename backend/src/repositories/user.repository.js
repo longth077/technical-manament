@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op } = require("sequelize");
 
 class UserRepository {
   constructor(model) {
@@ -26,11 +26,14 @@ class UserRepository {
   }
 
   async findPending() {
-    return this.model.findAll({ where: { status: 'pending' }, order: [['created_at', 'ASC']] });
+    return this.model.findAll({
+      where: { status: "pending" },
+      order: [["created_at", "ASC"]],
+    });
   }
 
   async findAllNonAdmin() {
-    return this.model.findAll({ order: [['id', 'ASC']] });
+    return this.model.findAll({ order: [["id", "ASC"]] });
   }
 
   async create(payload) {

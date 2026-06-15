@@ -3,7 +3,8 @@
 Separated backend/frontend implementation for technical management.
 
 ## Stack
-- Backend: Node.js 22, Express, Sequelize ORM, MySQL 8.4.8
+- Backend (legacy): Node.js 22, Express, Sequelize ORM, MySQL 8.4.8
+- Backend (new): Go, Gin, GORM, MySQL 8.4.8
 - Frontend: React (Vite)
 
 ## Default admin
@@ -18,6 +19,19 @@ cp .env.example .env
 npm install
 npm start
 ```
+
+## Backend (Go + Gin + GORM)
+```bash
+cd backend-go
+cp .env.example .env
+go mod tidy
+go run ./cmd/server
+```
+
+Notes:
+- API route structure follows the previous backend (`/api/auth`, `/api/admin`, `/api/entities`, `/api/enums`).
+- SQL and CSV import/export are implemented.
+- Excel/report export-import endpoints currently return `501 Not Implemented`.
 
 ## Frontend
 ```bash

@@ -22,6 +22,7 @@ const authMiddlewareFactory = require("./middleware/basic-auth");
 const errorHandler = require("./middleware/error-handler");
 const createRoutes = require("./routes");
 const { ENTITY_NAMES } = require("./utils/entities");
+const runDbInit = require("./utils/db-init");
 
 // ── Warehouse image upload directory (absolute path at project root) ──────────
 const WAREHOUSE_IMAGES_DIR = path.resolve(__dirname, "../../warehouse_images");
@@ -50,6 +51,7 @@ const warehouseImageUpload = multer({
 async function createApp() {
   await sequelize.authenticate();
   await sequelize.sync();
+  await runDbInit(sequelize);
 
   const userRepository = new UserRepository(models.users);
   const entityRepositories = Object.fromEntries(

@@ -3,7 +3,9 @@ package service
 import (
 	"encoding/base64"
 	"encoding/csv"
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"technical-management/backend-go/internal/constants"
@@ -67,11 +69,15 @@ func (s *AdminService) DeleteUser(id string) error {
 func (s *AdminService) ExportSQL() (string, error) {
 	lines := []string{"SET FOREIGN_KEY_CHECKS=0;"}
 	for _, entity := range constants.EntityNames {
+		table, ok := constants.ResolveEntityTable(entity)
+		if !ok {
+			continue
+		}
 		var rows []map[string]any
-		if err := s.db.Table(entity).Find(&rows).Error; err != nil {
+		if err := s.db.Table(table).Find(&rows).Error; err != nil {
 			return "", err
 		}
-		lines = append(lines, fmt.Sprintf("DELETE FROM %s;", entity))
+		lines = append(lines, fmt.Sprintf("DELETE FROM %s;", table))
 		for _, row := range rows {
 			keys := make([]string, 0, len(row))
 			vals := make([]string, 0, len(row))
@@ -79,7 +85,7 @@ func (s *AdminService) ExportSQL() (string, error) {
 				keys = append(keys, k)
 				vals = append(vals, sqlValue(v))
 			}
-			lines = append(lines, fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);", entity, strings.Join(keys, ","), strings.Join(vals, ",")))
+			lines = append(lines, fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);", table, strings.Join(keys, ","), strings.Join(vals, ",")))
 		}
 	}
 	lines = append(lines, "SET FOREIGN_KEY_CHECKS=1;")
@@ -94,9 +100,26 @@ func (s *AdminService) ImportSQL(sql string) error {
 			if trimmed == "" {
 				continue
 			}
-			if err := tx.Exec(trimmed).Error; err != nil {
+			if strings.EqualFold(trimmed, "SET FOREIGN_KEY_CHECKS=0") || strings.EqualFold(trimmed, "SET FOREIGN_KEY_CHECKS=1") {
+				continue
+			}
+			if table, ok := parseDeleteStatement(trimmed); ok {
+				if err := tx.Table(table).Where("1 = 1").Delete(nil).Error; err != nil {
+					return err
+				}
+				continue
+			}
+			table, payload, ok, err := parseInsertStatement(trimmed)
+			if err != nil {
 				return err
 			}
+			if ok {
+				if err := tx.Table(table).Create(payload).Error; err != nil {
+					return err
+				}
+				continue
+			}
+			return NewHttpError(422, "Only exported SQL format is supported for import")
 		}
 		return nil
 	})
@@ -108,15 +131,19 @@ func (s *AdminService) ExportCSVZip() ([]byte, error) {
 		data string
 	}
 	for _, entity := range constants.EntityNames {
+		table, ok := constants.ResolveEntityTable(entity)
+		if !ok {
+			continue
+		}
 		var rows []map[string]any
-		if err := s.db.Table(entity).Order("id ASC").Find(&rows).Error; err != nil {
+		if err := s.db.Table(table).Order("id ASC").Find(&rows).Error; err != nil {
 			return nil, err
 		}
 		if len(rows) == 0 {
 			files = append(files, struct {
 				name string
 				data string
-			}{name: entity + ".csv", data: ""})
+			}{name: table + ".csv", data: ""})
 			continue
 		}
 		headers := make([]string, 0, len(rows[0]))
@@ -140,7 +167,7 @@ func (s *AdminService) ExportCSVZip() ([]byte, error) {
 		files = append(files, struct {
 			name string
 			data string
-		}{name: entity + ".csv", data: b.String()})
+		}{name: table + ".csv", data: b.String()})
 	}
 	return zipFiles(files)
 }
@@ -157,7 +184,8 @@ func (s *AdminService) ImportCSVZip(base64Zip string) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		for _, entry := range entries {
 			entity := strings.TrimSuffix(entry.Name, ".csv")
-			if !constants.IsValidEntity(entity) {
+			table, ok := constants.ResolveEntityTable(entity)
+			if !ok {
 				continue
 			}
 			reader := csv.NewReader(strings.NewReader(entry.Content))
@@ -165,7 +193,7 @@ func (s *AdminService) ImportCSVZip(base64Zip string) error {
 			if err != nil {
 				return err
 			}
-			if err := tx.Exec("DELETE FROM " + entity).Error; err != nil {
+			if err := tx.Table(table).Where("1 = 1").Delete(nil).Error; err != nil {
 				return err
 			}
 			if len(records) <= 1 {
@@ -183,7 +211,7 @@ func (s *AdminService) ImportCSVZip(base64Zip string) error {
 						}
 					}
 				}
-				if err := tx.Table(entity).Create(payload).Error; err != nil {
+				if err := tx.Table(table).Create(payload).Error; err != nil {
 					return err
 				}
 			}
@@ -200,4 +228,92 @@ func sqlValue(v any) string {
 	s = strings.ReplaceAll(s, `\\`, `\\\\`)
 	s = strings.ReplaceAll(s, `'`, `\\'`)
 	return "'" + s + "'"
+}
+
+var (
+	deletePattern = regexp.MustCompile(`(?i)^DELETE\s+FROM\s+([a-zA-Z_][a-zA-Z0-9_]*)$`)
+	insertPattern = regexp.MustCompile(`(?i)^INSERT\s+INTO\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.+)\)\s+VALUES\s*\((.+)\)$`)
+)
+
+func parseDeleteStatement(stmt string) (string, bool) {
+	match := deletePattern.FindStringSubmatch(stmt)
+	if len(match) != 2 {
+		return "", false
+	}
+	table, ok := constants.ResolveEntityTable(match[1])
+	return table, ok
+}
+
+func parseInsertStatement(stmt string) (string, map[string]any, bool, error) {
+	match := insertPattern.FindStringSubmatch(stmt)
+	if len(match) != 4 {
+		return "", nil, false, nil
+	}
+	table, ok := constants.ResolveEntityTable(match[1])
+	if !ok {
+		return "", nil, false, NewHttpError(422, "Unsupported entity in SQL import")
+	}
+	columns := strings.Split(match[2], ",")
+	values, err := splitSQLValues(match[3])
+	if err != nil {
+		return "", nil, false, err
+	}
+	if len(columns) != len(values) {
+		return "", nil, false, errors.New("invalid SQL import format")
+	}
+	payload := map[string]any{}
+	for i := range columns {
+		col := strings.TrimSpace(columns[i])
+		payload[col] = parseSQLLiteral(values[i])
+	}
+	return table, payload, true, nil
+}
+
+func splitSQLValues(raw string) ([]string, error) {
+	parts := make([]string, 0)
+	var current strings.Builder
+	inQuote := false
+	escaped := false
+	for _, ch := range raw {
+		if escaped {
+			current.WriteRune(ch)
+			escaped = false
+			continue
+		}
+		if ch == '\\' {
+			current.WriteRune(ch)
+			escaped = true
+			continue
+		}
+		if ch == '\'' {
+			current.WriteRune(ch)
+			inQuote = !inQuote
+			continue
+		}
+		if ch == ',' && !inQuote {
+			parts = append(parts, strings.TrimSpace(current.String()))
+			current.Reset()
+			continue
+		}
+		current.WriteRune(ch)
+	}
+	if inQuote {
+		return nil, errors.New("invalid SQL import format")
+	}
+	parts = append(parts, strings.TrimSpace(current.String()))
+	return parts, nil
+}
+
+func parseSQLLiteral(v string) any {
+	trimmed := strings.TrimSpace(v)
+	if strings.EqualFold(trimmed, "NULL") {
+		return nil
+	}
+	if strings.HasPrefix(trimmed, "'") && strings.HasSuffix(trimmed, "'") && len(trimmed) >= 2 {
+		unquoted := trimmed[1 : len(trimmed)-1]
+		unquoted = strings.ReplaceAll(unquoted, "\\'", "'")
+		unquoted = strings.ReplaceAll(unquoted, "\\\\", "\\")
+		return unquoted
+	}
+	return trimmed
 }

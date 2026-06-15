@@ -49,3 +49,52 @@ func IsValidEntity(entity string) bool {
 	}
 	return false
 }
+
+func ResolveEntityTable(entity string) (string, bool) {
+	switch entity {
+	case "enum_constants":
+		return "enum_constants", true
+	case "unit_infos":
+		return "unit_infos", true
+	case "overviews":
+		return "overviews", true
+	case "staffs":
+		return "staffs", true
+	case "warehouses":
+		return "warehouses", true
+	case "warehouse_images":
+		return "warehouse_images", true
+	case "warehouse_equipments":
+		return "warehouse_equipments", true
+	case "warehouse_inspections":
+		return "warehouse_inspections", true
+	case "warehouse_accesses":
+		return "warehouse_accesses", true
+	case "warehouse_handovers":
+		return "warehouse_handovers", true
+	case "warehouse_exports":
+		return "warehouse_exports", true
+	case "warehouse_imports":
+		return "warehouse_imports", true
+	case "warehouse_lightnings":
+		return "warehouse_lightnings", true
+	case "weapons":
+		return "weapons", true
+	case "tech_equipments":
+		return "tech_equipments", true
+	case "vehicles":
+		return "vehicles", true
+	case "materials":
+		return "materials", true
+	case "staff_warehouses":
+		return "staff_warehouses", true
+	case "staff_weapons":
+		return "staff_weapons", true
+	case "staff_vehicles":
+		return "staff_vehicles", true
+	case "staff_tech_equipment":
+		return "staff_tech_equipment", true
+	default:
+		return "", false
+	}
+}
